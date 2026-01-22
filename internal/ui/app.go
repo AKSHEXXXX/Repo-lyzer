@@ -395,26 +395,27 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.compareInput2 = ""
 			case "j":
 				// Export comparison to JSON
-				if m.compareResult != nil {
-					filename, err := ExportCompareJSON(*m.compareResult)
+				if m.compareResult != nil && m.compareResult.Repo1.Repo != nil && m.compareResult.Repo2.Repo != nil {
+					_, err := ExportCompareJSON(*m.compareResult)
 					if err != nil {
-						m.err = err
+						m.err = fmt.Errorf("failed to export JSON: %w", err)
 					} else {
-						m.err = nil
-						// Show success message briefly (will need status in model)
-						_ = filename // TODO: show status message
+						m.err = fmt.Errorf("✓ Exported comparison to JSON successfully")
 					}
+				} else {
+					m.err = fmt.Errorf("no comparison data available for export")
 				}
 			case "m":
 				// Export comparison to Markdown
-				if m.compareResult != nil {
-					filename, err := ExportCompareMarkdown(*m.compareResult)
+				if m.compareResult != nil && m.compareResult.Repo1.Repo != nil && m.compareResult.Repo2.Repo != nil {
+					_, err := ExportCompareMarkdown(*m.compareResult)
 					if err != nil {
-						m.err = err
+						m.err = fmt.Errorf("failed to export Markdown: %w", err)
 					} else {
-						m.err = nil
-						_ = filename
+						m.err = fmt.Errorf("✓ Exported comparison to Markdown successfully")
 					}
+				} else {
+					m.err = fmt.Errorf("no comparison data available for export")
 				}
 			}
 		}
@@ -1170,6 +1171,15 @@ func (m MainModel) compareResultView() string {
 		verdictBox,
 		footer,
 	)
+
+	// Add error/status message if present
+	if m.err != nil {
+		content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			content,
+			"\n" + ErrorStyle.Render(fmt.Sprintf("Status: %v", m.err)),
+		)
+	}
 
 	if m.windowWidth == 0 {
 		return content
