@@ -31,7 +31,7 @@ func (m CompareResultModel) Update(msg tea.Msg) (CompareResultModel, tea.Cmd) {
 					if err != nil {
 						return ErrorMsg(fmt.Errorf("failed to export JSON: %w", err))
 					}
-					return StatusMsg("✓ Exported comparison to JSON successfully")
+					return StatusMsg{Message: "✓ Exported comparison to JSON successfully", IsError: false}
 				}
 			} else {
 				return m, func() tea.Msg {
@@ -46,7 +46,7 @@ func (m CompareResultModel) Update(msg tea.Msg) (CompareResultModel, tea.Cmd) {
 					if err != nil {
 						return ErrorMsg(fmt.Errorf("failed to export Markdown: %w", err))
 					}
-					return StatusMsg("✓ Exported comparison to Markdown successfully")
+					return StatusMsg{Message: "✓ Exported comparison to Markdown successfully", IsError: false}
 				}
 			} else {
 				return m, func() tea.Msg {

@@ -48,9 +48,12 @@ type BackToMenuMsg struct{}
 
 type SwitchToInputMsg struct{}
 
-type ErrorMsg error
+type CompareReposMsg struct {
+	repo1 string
+	repo2 string
+}
 
-type StatusMsg string
+type ErrorMsg error
 
 // CompareInputModel handles input for repository comparison
 type CompareInputModel struct {
@@ -62,6 +65,38 @@ type CompareInputModel struct {
 
 func NewCompareInputModel() CompareInputModel {
 	return CompareInputModel{}
+}
+
+func (m CompareInputModel) Update(msg tea.Msg) (CompareInputModel, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "enter":
+			if m.step == 0 && m.repo1 != "" {
+				m.step = 1
+				return m, nil
+			} else if m.step == 1 && m.repo2 != "" {
+				return m, func() tea.Msg { return CompareReposMsg{repo1: m.repo1, repo2: m.repo2} }
+			}
+		case "backspace":
+			if m.step == 1 && m.repo2 != "" {
+				m.repo2 = m.repo2[:len(m.repo2)-1]
+			} else if m.step == 0 && m.repo1 != "" {
+				m.repo1 = m.repo1[:len(m.repo1)-1]
+			}
+		case "esc":
+			return m, func() tea.Msg { return BackToMenuMsg{} }
+		default:
+			if len(msg.String()) == 1 {
+				if m.step == 1 {
+					m.repo2 += msg.String()
+				} else {
+					m.repo1 += msg.String()
+				}
+			}
+		}
+	}
+	return m, nil
 }
 
 // SettingsModel handles application settings
@@ -83,6 +118,48 @@ func NewHistoryModel() HistoryModel {
 	return HistoryModel{}
 }
 
+func (m *HistoryModel) AddEntry(result AnalysisResult) {
+	entry := HistoryEntry{
+		RepoName:      result.Repo.FullName,
+		AnalyzedAt:    time.Now(),
+		HealthScore:   result.HealthScore,
+		Stars:         result.Repo.Stars,
+		Forks:         result.Repo.Forks,
+		MaturityLevel: result.MaturityLevel,
+	}
+
+	// Remove duplicate if exists
+	for i, e := range m.entries {
+		if e.RepoName == entry.RepoName {
+			m.entries = append(m.entries[:i], m.entries[i+1:]...)
+			break
+		}
+	}
+
+	// Add to front
+	m.entries = append([]HistoryEntry{entry}, m.entries...)
+
+	// Trim to max size
+	if len(m.entries) > 50 {
+		m.entries = m.entries[:50]
+	}
+}
+
+func (m *HistoryModel) Save() error {
+	history := &History{Entries: m.entries}
+	return history.Save()
+}
+
+func (m *HistoryModel) Delete(index int) {
+	if index >= 0 && index < len(m.entries) {
+		m.entries = append(m.entries[:index], m.entries[index+1:]...)
+	}
+}
+
+func (m *HistoryModel) Clear() {
+	m.entries = []HistoryEntry{}
+}
+
 // CloneInputModel handles repository cloning input
 type CloneInputModel struct {
 	input string
@@ -90,6 +167,16 @@ type CloneInputModel struct {
 
 func NewCloneInputModel() CloneInputModel {
 	return CloneInputModel{}
+}
+
+// StatusMsg represents a status message with error indication
+type StatusMsg struct {
+	Message string
+	IsError bool
+}
+
+func (s StatusMsg) Error() string {
+	return s.Message
 }
 
 type MainModel struct {
@@ -104,7 +191,7 @@ type MainModel struct {
 	compareResult    CompareResultModel
 	settings         SettingsModel
 	help             HelpModel
-	history          HistoryModel
+	history          *HistoryModel
 	favorites        FavoritesModel
 	cloneInput       CloneInputModel
 	cloning          CloningModel
@@ -125,7 +212,7 @@ type MainModel struct {
 	historyCursor int
 	favoritesCursor int
 	animTick      int
-	err           error
+	err           interface{}
 	analysisType  string
 	compareStep   int
 	compareInput1 string
@@ -133,6 +220,10 @@ type MainModel struct {
 	inTokenInput  bool
 	tokenInput    string
 	settingsOption string
+	helpContent   string
+	repoInput     string
+	progress      *ProgressTracker
+	cacheStatus   string
 }
 
 // NewMainModel creates a new main application model with default settings.
@@ -293,7 +384,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state = stateHistory
 				m.historyCursor = 0
 				history, _ := LoadHistory()
-				m.history = history
+				m.history.entries = history.Entries
 				m.menu.Done = false
 			case 4: // Clone Repository
 				m.state = stateCloneInput
@@ -326,7 +417,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case stateInput:
 		newInput, cmd := m.input.Update(msg)
-		m.input = newInput.(InputModel)
+		m.input = newInput
 		if cmd != nil {
 			cmds = append(cmds, cmd)
 		}
@@ -386,32 +477,32 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch msg.String() {
 			case "q", "esc":
 				m.state = stateMenu
-				m.compareResult = nil
+				m.compareResult = CompareResultModel{}
 				m.compareInput1 = ""
 				m.compareInput2 = ""
 			case "j":
 				// Export comparison to JSON
-				if m.compareResult != nil && m.compareResult.Repo1.Repo != nil && m.compareResult.Repo2.Repo != nil {
-					_, err := ExportCompareJSON(*m.compareResult)
+				if m.compareResult.result != nil && m.compareResult.result.Repo1.Repo != nil && m.compareResult.result.Repo2.Repo != nil {
+					_, err := ExportCompareJSON(*m.compareResult.result)
 					if err != nil {
-						m.err = fmt.Errorf("failed to export JSON: %w", err)
+						m.compareResult.err = fmt.Errorf("failed to export JSON: %w", err)
 					} else {
-						m.err = fmt.Errorf("✓ Exported comparison to JSON successfully")
+						m.compareResult.err = StatusMsg{Message: "✓ Exported comparison to JSON successfully", IsError: false}
 					}
 				} else {
-					m.err = fmt.Errorf("no comparison data available for export")
+					m.compareResult.err = fmt.Errorf("no comparison data available for export")
 				}
 			case "m":
 				// Export comparison to Markdown
-				if m.compareResult != nil && m.compareResult.Repo1.Repo != nil && m.compareResult.Repo2.Repo != nil {
-					_, err := ExportCompareMarkdown(*m.compareResult)
+				if m.compareResult.result != nil && m.compareResult.result.Repo1.Repo != nil && m.compareResult.result.Repo2.Repo != nil {
+					_, err := ExportCompareMarkdown(*m.compareResult.result)
 					if err != nil {
-						m.err = fmt.Errorf("failed to export Markdown: %w", err)
+						m.compareResult.err = fmt.Errorf("failed to export Markdown: %w", err)
 					} else {
-						m.err = fmt.Errorf("✓ Exported comparison to Markdown successfully")
+						m.compareResult.err = StatusMsg{Message: "✓ Exported comparison to Markdown successfully", IsError: false}
 					}
 				} else {
-					m.err = fmt.Errorf("no comparison data available for export")
+					m.compareResult.err = fmt.Errorf("no comparison data available for export")
 				}
 			}
 		}
@@ -662,22 +753,22 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyMsg:
 			switch msg.String() {
 			case "enter":
-				if m.input != "" {
+				if m.cloneInput.input != "" {
 					m.state = stateCloning
-					cmds = append(cmds, m.cloneRepo(m.input))
+					cmds = append(cmds, m.cloneRepo(m.cloneInput.input))
 				}
 			case "esc":
 				m.state = stateMenu
-				m.input = ""
+				m.cloneInput.input = ""
 			case "backspace":
-				if len(m.input) > 0 {
-					m.input = m.input[:len(m.input)-1]
+				if len(m.cloneInput.input) > 0 {
+					m.cloneInput.input = m.cloneInput.input[:len(m.cloneInput.input)-1]
 				}
 			case "ctrl+u":
-				m.input = ""
+				m.cloneInput.input = ""
 			default:
 				if len(msg.String()) == 1 {
-					m.input += msg.String()
+					m.cloneInput.input += msg.String()
 				}
 			}
 		}

@@ -15,6 +15,8 @@ type Favorite struct {
 	RepoName  string    `json:"repo_name"`
 	UseCount  int       `json:"use_count"`
 	LastUsed  time.Time `json:"last_used"`
+	AddedAt   time.Time `json:"added_at"`
+	Notes     string    `json:"notes"`
 }
 
 type Favorites struct {
@@ -54,6 +56,37 @@ func (f *Favorites) UpdateUsage(repoName string) {
 			return
 		}
 	}
+}
+
+func (f *Favorites) IsFavorite(repoName string) bool {
+	for _, item := range f.Items {
+		if item.RepoName == repoName {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *Favorites) GetTopFavorites(n int) []Favorite {
+	if len(f.Items) <= n {
+		return f.Items
+	}
+	// Sort by UseCount descending
+	sorted := make([]Favorite, len(f.Items))
+	copy(sorted, f.Items)
+	for i := 0; i < len(sorted)-1; i++ {
+		for j := i + 1; j < len(sorted); j++ {
+			if sorted[j].UseCount > sorted[i].UseCount {
+				sorted[i], sorted[j] = sorted[j], sorted[i]
+			}
+		}
+	}
+	return sorted[:n]
+}
+
+func (f *Favorites) Clear() error {
+	f.Items = []Favorite{}
+	return f.Save()
 }
 
 func (f *Favorites) Save() error {
