@@ -139,18 +139,18 @@ func (m MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "c":
 			if !m.inSubmenu {
-				m.cursor = 1
+				m.cursor = 2
 				m.enterSubmenu()
 			}
 		case "h", "H":
 			// Quick access: History
 			if !m.inSubmenu {
-				m.cursor = 2
+				m.cursor = 3
 				m.enterSubmenu()
 			}
 		case "s":
 			if !m.inSubmenu {
-				m.cursor = 4
+				m.cursor = 5
 				m.enterSubmenu()
 			}
 		}

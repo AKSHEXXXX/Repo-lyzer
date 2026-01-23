@@ -136,6 +136,11 @@ func ExportCertificatePDF(cert *analyzer.CertificateData) (string, error) {
 		return "", err
 	}
 
+	// Ensure the downloads directory exists
+	if err := os.MkdirAll(downloadsDir, 0755); err != nil {
+		return "", err
+	}
+
 	filename := filepath.Join(downloadsDir, generateFilename(cert.Owner+"/"+cert.RepoName, "pdf"))
 
 	pdf := gofpdf.New("P", "mm", "A4", "")

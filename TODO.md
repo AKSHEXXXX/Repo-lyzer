@@ -1,33 +1,10 @@
-# Refactoring MainModel - Breaking Down Monolithic Structure
+# TODO: Fix Compilation Errors in Certificate Output
 
-## Current Status
-- [x] Analyze MainModel structure and identify issues
-- [x] Create comprehensive refactoring plan
-- [x] Get user approval for plan
+## Tasks
+- [x] Change fmt.Printf statements in internal/output/certificate.go to use %s instead of %d for styled string values (Stars, Forks, Open Issues, Commits Last Year, Contributors) - Code already uses %s
+- [x] Verify numeric values are properly converted to strings before styling (already done with fmt.Sprintf)
+- [x] Test compilation with `go build` - Build successful
+- [ ] Test certificate output functionality
 
-## Step 1: Create Sub-Model Files
-- [x] Create InputModel (input.go) - handles repository input state
-- [ ] Create LoadingModel (loading.go) - handles analysis loading state
-- [ ] Create CompareInputModel (compare_input.go) - handles comparison input state
-- [ ] Create CompareLoadingModel (compare_loading.go) - handles comparison loading state
-- [ ] Create CompareResultModel (compare_result.go) - handles comparison results state
-- [ ] Create SettingsModel (settings.go) - handles settings state
-- [ ] Create HelpModel (help.go) - handles help state
-- [ ] Create HistoryModel (history.go) - handles history state
-- [ ] Create FavoritesModel (favorites.go) - handles favorites state
-- [ ] Create CloneInputModel (clone_input.go) - handles clone input state
-- [ ] Create CloningModel (cloning.go) - handles cloning state
-
-## Step 2: Refactor MainModel
-- [ ] Remove state-specific fields from MainModel
-- [ ] Add sub-model fields to MainModel
-- [ ] Update NewMainModel() to initialize sub-models
-- [ ] Refactor Update() method to delegate to sub-models
-- [ ] Refactor View() method to delegate to sub-models
-- [ ] Update state transitions and coordination logic
-
-## Step 3: Testing and Validation
-- [ ] Test all UI states work correctly
-- [ ] Verify no functionality is lost
-- [ ] Update any external references if needed
-- [ ] Clean up and finalize refactoring
+## Additional Tasks
+- [x] Investigate reported errors in internal/ui/app.go - No compilation errors found, code builds and runs successfully
