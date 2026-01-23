@@ -1,7 +1,10 @@
-# TODO: Fix Compilation Errors in internal/output/certificate.go
+# TODO: Fix Compilation Errors in Certificate Output
 
-- [x] Update fmt.Printf for Stars (line ~49): Change "%s: %d\n" to "%s: %s\n"
-- [x] Update fmt.Printf for Forks (line ~50): Change "%s: %d\n" to "%s: %s\n"
-- [x] Update fmt.Printf for Open Issues (line ~51): Change "%s: %d\n" to "%s: %s\n"
-- [x] Update fmt.Printf for Commits (Last Year) (line ~61): Change "%s: %d (%s)\n" to "%s: %s (%s)\n"
-- [x] Update fmt.Printf for Contributors (line ~62): Change "%s: %d\n" to "%s: %s\n"
+## Tasks
+- [x] Change fmt.Printf statements in internal/output/certificate.go to use %s instead of %d for styled string values (Stars, Forks, Open Issues, Commits Last Year, Contributors) - Code already uses %s
+- [x] Verify numeric values are properly converted to strings before styling (already done with fmt.Sprintf)
+- [x] Test compilation with `go build` - Build successful
+- [ ] Test certificate output functionality
+
+## Additional Tasks
+- [x] Investigate reported errors in internal/ui/app.go - No compilation errors found, code builds and runs successfully
