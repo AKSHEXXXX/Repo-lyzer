@@ -545,6 +545,8 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case stateFavorites:
 		switch msg := msg.(type) {
+		case StatusMsg:
+			m.err = msg
 		case tea.KeyMsg:
 			switch msg.String() {
 			case "up", "k":
@@ -560,18 +562,26 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.favorites.favorites != nil && len(m.favorites.favorites.Items) > 0 {
 					repoName := m.favorites.favorites.Items[m.favoritesCursor].RepoName
 					m.favorites.favorites.UpdateUsage(repoName)
-					m.favorites.favorites.Save()
-					m.input.input = repoName
-					m.state = stateLoading
-					cmds = append(cmds, m.analyzeRepo(repoName), TickProgressCmd())
+					if err := m.favorites.favorites.Save(); err != nil {
+						log.Printf("Failed to save favorites: %v", err)
+						m.err = fmt.Errorf("Failed to save favorites: %v", err)
+					} else {
+						m.input.input = repoName
+						m.state = stateLoading
+						cmds = append(cmds, m.analyzeRepo(repoName), TickProgressCmd())
+					}
 				}
 			case "d":
 				// Remove from favorites
 				if m.favorites.favorites != nil && len(m.favorites.favorites.Items) > 0 {
 					m.favorites.favorites.Remove(m.favorites.favorites.Items[m.favoritesCursor].RepoName)
-					m.favorites.favorites.Save()
-					if m.favoritesCursor >= len(m.favorites.favorites.Items) && m.favoritesCursor > 0 {
-						m.favoritesCursor--
+					if err := m.favorites.favorites.Save(); err != nil {
+						log.Printf("Failed to save favorites: %v", err)
+						m.err = fmt.Errorf("Failed to save favorites: %v", err)
+					} else {
+						if m.favoritesCursor >= len(m.favorites.favorites.Items) && m.favoritesCursor > 0 {
+							m.favoritesCursor--
+						}
 					}
 				}
 			case "a":

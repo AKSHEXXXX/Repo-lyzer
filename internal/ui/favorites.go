@@ -3,6 +3,7 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -168,14 +169,20 @@ func (m FavoritesModel) Update(msg tea.Msg) (FavoritesModel, tea.Cmd) {
 			if m.favorites != nil && len(m.favorites.Items) > 0 {
 				repoName := m.favorites.Items[m.cursor].RepoName
 				m.favorites.UpdateUsage(repoName)
-				m.favorites.Save()
+				if err := m.favorites.Save(); err != nil {
+					log.Printf("Failed to save favorites: %v", err)
+					return m, func() tea.Msg { return StatusMsg{Message: "Failed to save favorites: " + err.Error(), IsError: true} }
+				}
 				return m, func() tea.Msg { return AnalyzeRepoMsg{repoName: repoName} }
 			}
 		case "d":
 			// Remove from favorites
 			if m.favorites != nil && len(m.favorites.Items) > 0 {
 				m.favorites.Remove(m.favorites.Items[m.cursor].RepoName)
-				m.favorites.Save()
+				if err := m.favorites.Save(); err != nil {
+					log.Printf("Failed to save favorites: %v", err)
+					return m, func() tea.Msg { return StatusMsg{Message: "Failed to save favorites: " + err.Error(), IsError: true} }
+				}
 				if m.cursor >= len(m.favorites.Items) && m.cursor > 0 {
 					m.cursor--
 				}
