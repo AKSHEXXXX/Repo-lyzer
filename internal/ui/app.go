@@ -114,8 +114,8 @@ type HistoryModel struct {
 	cursor  int
 }
 
-func NewHistoryModel() HistoryModel {
-	return HistoryModel{}
+func NewHistoryModel() *HistoryModel {
+	return &HistoryModel{}
 }
 
 func (m *HistoryModel) AddEntry(result AnalysisResult) {
@@ -561,7 +561,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					repoName := m.favorites.favorites.Items[m.favoritesCursor].RepoName
 					m.favorites.favorites.UpdateUsage(repoName)
 					m.favorites.favorites.Save()
-					m.input = repoName
+					m.input.input = repoName
 					m.state = stateLoading
 					cmds = append(cmds, m.analyzeRepo(repoName), TickProgressCmd())
 				}
@@ -598,7 +598,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Re-analyze selected repo
 				if m.history != nil && len(m.history.Entries) > 0 {
 					repoName := m.history.Entries[m.historyCursor].RepoName
-					m.input = repoName
+					m.input.input = repoName
 					m.state = stateLoading
 					cmds = append(cmds, m.analyzeRepo(repoName), TickProgressCmd())
 				}

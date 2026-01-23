@@ -36,6 +36,7 @@ func (f *Favorites) Add(repoName string) {
 		RepoName: repoName,
 		UseCount: 1,
 		LastUsed: time.Now(),
+		AddedAt:  time.Now(),
 	})
 }
 
