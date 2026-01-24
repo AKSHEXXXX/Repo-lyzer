@@ -271,8 +271,7 @@ func (m DashboardModel) View() string {
 	}
 
 	tabs := m.renderTabs()
-
-	footer := SubtleStyle.Render("←→: switch view • f: files • e: export • ?: help • q: back")
+	footer := SubtleStyle.Render(FormatShortcutsCompact(GetDashboardShortcuts()))
 
 	fullContent := lipgloss.JoinVertical(
 		lipgloss.Left,

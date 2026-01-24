@@ -138,9 +138,15 @@ var analyzeCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
+		compact, _ := cmd.Flags().GetBool("compact")
+		summary, _ := cmd.Flags().GetBool("summary")
 
 		if dryRun {
 			return runDryRun(args[0])
+		}
+
+		if summary {
+			return runSummary(args[0])
 		}
 
 		// Validate the repository URL format
@@ -197,9 +203,6 @@ var analyzeCmd = &cobra.Command{
 		// Calculate repository health score
 		score := analyzer.CalculateHealth(repoInfo, commits)
 
-		// Analyze commit activity per day
-		activity := analyzer.CommitsPerDay(commits)
-
 		// Fetch contributors
 		contributors, err := client.GetContributorsWithAvatars(owner, repo, 15)
 		if err != nil {
@@ -218,8 +221,29 @@ var analyzeCmd = &cobra.Command{
 				false, // Assuming no releases check for simplicity
 			)
 
+		// Track analysis duration
+		duration := time.Since(startTime)
+
+		if compact {
+			return output.PrintCompactJSON(output.CompactConfig{
+				Repo:            repoInfo,
+				HealthScore:     score,
+				BusFactor:       busFactor,
+				BusRisk:         busRisk,
+				MaturityScore:   maturityScore,
+				MaturityLevel:   maturityLevel,
+				CommitsLastYear: len(commits),
+				Contributors:    len(contributors),
+				Duration:        duration,
+				Languages:       langs,
+			})
+		}
+
+		// Analyze commit activity per day
+		activity := analyzer.CommitsPerDay(commits)
+
 		// Build recruiter summary
-		summary := analyzer.BuildRecruiterSummary(
+		recruiterSummary := analyzer.BuildRecruiterSummary(
 			repoInfo.FullName,
 			repoInfo.Forks,
 			repoInfo.Stars,
@@ -237,17 +261,146 @@ var analyzeCmd = &cobra.Command{
 		output.PrintCommitActivity(activity, 14)
 		output.PrintHealth(score)
 		output.PrintGitHubAPIStatus(client)
-		output.PrintRecruiterSummary(summary)
+		output.PrintRecruiterSummary(recruiterSummary)
 
 		// Display analysis time
-		duration := time.Since(startTime)
 		fmt.Printf("\n⏱️  Analysis completed in %.2f seconds\n", duration.Seconds())
 
 		return nil
 	},
 }
 
+// runSummary performs a quick summary analysis of a repository
+func runSummary(repoArg string) error {
+	// Validate the repository URL format
+	owner, repo, err := validateRepoURL(repoArg)
+	if err != nil {
+		return fmt.Errorf("invalid repository URL: %w", err)
+	}
+
+	// Initialize GitHub client
+	client := github.NewClient()
+
+	// Fetch repository information
+	repoInfo, err := client.GetRepo(owner, repo)
+	if err != nil {
+		return fmt.Errorf("failed to get repository: %w", err)
+	}
+
+	// Fetch commits from the last 30 days
+	commits30d, err := client.GetCommits(owner, repo, 30)
+	if err != nil {
+		return fmt.Errorf("failed to get commits: %w", err)
+	}
+
+	// Fetch programming languages
+	langs, err := client.GetLanguages(owner, repo)
+	if err != nil {
+		return fmt.Errorf("failed to get languages: %w", err)
+	}
+
+	// Fetch contributors
+	contributors, err := client.GetContributors(owner, repo)
+	if err != nil {
+		return fmt.Errorf("failed to get contributors: %w", err)
+	}
+
+	// Fetch commits for health calculation (last 365 days)
+	commitsYear, err := client.GetCommits(owner, repo, 365)
+	if err != nil {
+		return fmt.Errorf("failed to get yearly commits: %w", err)
+	}
+
+	// Calculate health score
+	score := analyzer.CalculateHealth(repoInfo, commitsYear)
+
+	// Get top language
+	topLang := getTopLanguage(langs)
+	if topLang == "" && repoInfo.Language != "" {
+		topLang = repoInfo.Language
+	}
+	if topLang == "" {
+		topLang = "Unknown"
+	}
+
+	// Format last commit date
+	lastCommit := formatTimeAgo(repoInfo.PushedAt)
+
+	// Print the 5-line summary
+	fmt.Printf("📊 Repository Summary: %s\n", repoInfo.FullName)
+	fmt.Printf("   Commits (30d): %d\n", len(commits30d))
+	fmt.Printf("   Top Language: %s\n", topLang)
+	fmt.Printf("   Contributors: %d\n", len(contributors))
+	fmt.Printf("   Health Score: %d/100\n", score)
+	fmt.Printf("   Last Commit: %s\n", lastCommit)
+
+	return nil
+}
+
+// getTopLanguage returns the language with the most bytes of code
+func getTopLanguage(langs map[string]int) string {
+	if len(langs) == 0 {
+		return ""
+	}
+
+	topLang := ""
+	maxBytes := 0
+
+	for lang, bytes := range langs {
+		if bytes > maxBytes {
+			maxBytes = bytes
+			topLang = lang
+		}
+	}
+
+	return topLang
+}
+
+// formatTimeAgo formats a time as a human-readable "time ago" string
+func formatTimeAgo(t time.Time) string {
+	now := time.Now()
+	diff := now.Sub(t)
+
+	days := int(diff.Hours() / 24)
+	hours := int(diff.Hours())
+	minutes := int(diff.Minutes())
+
+	switch {
+	case days > 365:
+		years := days / 365
+		if years == 1 {
+			return "1 year ago"
+		}
+		return fmt.Sprintf("%d years ago", years)
+	case days > 30:
+		months := days / 30
+		if months == 1 {
+			return "1 month ago"
+		}
+		return fmt.Sprintf("%d months ago", months)
+	case days > 0:
+		if days == 1 {
+			return "1 day ago"
+		}
+		return fmt.Sprintf("%d days ago", days)
+	case hours > 0:
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	case minutes > 0:
+		if minutes == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", minutes)
+	default:
+		return "just now"
+	}
+}
+
 func init() {
 	rootCmd.AddCommand(analyzeCmd)
 	analyzeCmd.Flags().Bool("dry-run", false, "Validate repository URL and show what metrics would be calculated without making API calls")
+	analyzeCmd.Flags().Bool("compact", false, "Output compact JSON summary for machine consumption")
+	analyzeCmd.Flags().Bool("summary", false, "Display a quick 5-line repository summary")
 }
