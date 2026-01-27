@@ -3,6 +3,7 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -99,6 +100,42 @@ func (m CompareInputModel) Update(msg tea.Msg) (CompareInputModel, tea.Cmd) {
 	return m, nil
 }
 
+func (m CompareInputModel) View(width, height int) string {
+	var currentInput string
+	var prompt string
+
+	if m.step == 0 {
+		prompt = "📥 ENTER FIRST REPOSITORY"
+		currentInput = m.repo1
+	} else {
+		prompt = "📥 ENTER SECOND REPOSITORY"
+		currentInput = m.repo2
+	}
+
+	inputContent := TitleStyle.Render(prompt) + "\n\n"
+
+	if m.step == 1 {
+		inputContent += SubtleStyle.Render("First: "+m.repo1) + "\n\n"
+	}
+
+	inputContent += InputStyle.Render("> "+currentInput) + "\n\n"
+	inputContent += SubtleStyle.Render("Format: owner/repo  •  Press Enter to continue  •  ESC to go back")
+
+	if m.err != nil {
+		inputContent += "\n\n" + ErrorStyle.Render(fmt.Sprintf("Error: %v", m.err))
+	}
+
+	box := BoxStyle.Render(inputContent)
+
+	return lipgloss.Place(
+		width,
+		height,
+		lipgloss.Center,
+		lipgloss.Center,
+		box,
+	)
+}
+
 // SettingsModel handles application settings
 type SettingsModel struct {
 	option string
@@ -106,6 +143,65 @@ type SettingsModel struct {
 
 func NewSettingsModel() SettingsModel {
 	return SettingsModel{}
+}
+
+func (m SettingsModel) View(width, height int) string {
+	var title string
+	var content string
+
+	switch m.option {
+	case "theme":
+		title = "🎨 Theme Settings"
+
+		// Build theme list with current indicator
+		themeList := ""
+		for i, theme := range AvailableThemes {
+			indicator := "  "
+			if i == CurrentThemeIndex {
+				indicator = "▶ "
+			}
+			themeList += fmt.Sprintf("  %s[%d] %s\n", indicator, i+1, theme.Name)
+		}
+
+		content = fmt.Sprintf(`
+Current theme: %s
+
+Available themes:
+%s
+Keybindings:
+  • Press 1-7 to select a theme
+  • Press 't' to cycle through themes
+
+Theme changes are applied immediately!
+`, CurrentTheme.Name, themeList)
+	case "cache":
+		title = "💾 Cache Settings"
+		content = "Cache settings not implemented yet"
+	case "export":
+		title = "📤 Export Options"
+		content = "Export settings not implemented yet"
+	case "token":
+		title = "🔑 GitHub Token"
+		content = "Token settings not implemented yet"
+	case "reset":
+		title = "🔄 Reset to Defaults"
+		content = "Reset settings not implemented yet"
+	default:
+		title = "⚙️ Settings"
+		content = `
+Select a settings option from the menu.
+`
+	}
+
+	settingsContent := TitleStyle.Render(title) + "\n\n" + content + "\n\n" + SubtleStyle.Render("Press ESC or q to go back")
+
+	box := BoxStyle.Render(settingsContent)
+
+	return lipgloss.Place(
+		width, height,
+		lipgloss.Center, lipgloss.Center,
+		box,
+	)
 }
 
 // HistoryModel handles analysis history
@@ -167,6 +263,110 @@ type CloneInputModel struct {
 
 func NewCloneInputModel() CloneInputModel {
 	return CloneInputModel{}
+}
+
+func (m CloneInputModel) View(width, height int) string {
+	header := TitleStyle.Render("📥 CLONE REPOSITORY")
+
+	inputContent := fmt.Sprintf(
+		"Enter repository to clone (owner/repo):\n\n> %s█\n\n"+
+			"The repository will be cloned to your Desktop folder.",
+		m.input,
+	)
+
+	footer := SubtleStyle.Render("Enter: clone • ESC: back • Ctrl+U: clear")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		header,
+		BoxStyle.Render(inputContent),
+		footer,
+	)
+
+	if width == 0 {
+		return content
+	}
+
+	return lipgloss.Place(
+		width,
+		height,
+		lipgloss.Center,
+		lipgloss.Center,
+		content,
+	)
+}
+
+func (m *HistoryModel) View(width, height int) string {
+	header := TitleStyle.Render("📜 Analysis History")
+
+	if m == nil || len(m.entries) == 0 {
+		content := lipgloss.JoinVertical(
+			lipgloss.Left,
+			header,
+			BoxStyle.Render("No history yet. Analyze a repository to get started!"),
+			SubtleStyle.Render("q/ESC: back to menu"),
+		)
+
+		if width == 0 {
+			return content
+		}
+
+		return lipgloss.Place(
+			width,
+			height,
+			lipgloss.Center,
+			lipgloss.Center,
+			content,
+		)
+	}
+
+	// Build history list
+	var lines []string
+	lines = append(lines, fmt.Sprintf("%-30s │ %-8s │ %-5s │ %-12s │ %s", "Repository", "Stars", "Health", "Maturity", "Analyzed"))
+	lines = append(lines, strings.Repeat("─", 85))
+
+	for i, entry := range m.entries {
+		prefix := "  "
+		if i == m.cursor {
+			prefix = "▶ "
+		}
+		line := fmt.Sprintf("%s%-28s │ ⭐%-6d │ 💚%-3d │ %-12s │ %s",
+			prefix,
+			entry.RepoName,
+			entry.Stars,
+			entry.HealthScore,
+			entry.MaturityLevel,
+			entry.AnalyzedAt.Format("2006-01-02 15:04"),
+		)
+		if i == m.cursor {
+			lines = append(lines, SelectedStyle.Render(line))
+		} else {
+			lines = append(lines, line)
+		}
+	}
+
+	tableBox := BoxStyle.Render(strings.Join(lines, "\n"))
+
+	footer := SubtleStyle.Render("↑↓: navigate • Enter: re-analyze • d: delete • c: clear all • q/ESC: back")
+
+	content := lipgloss.JoinVertical(
+		lipgloss.Left,
+		header,
+		tableBox,
+		footer,
+	)
+
+	if width == 0 {
+		return content
+	}
+
+	return lipgloss.Place(
+		width,
+		height,
+		lipgloss.Center,
+		lipgloss.Center,
+		content,
+	)
 }
 
 // StatusMsg represents a status message with error indication
@@ -348,6 +548,29 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = fmt.Errorf("⭐ Added to favorites: %s", m.dashboard.data.Repo.FullName)
 			}
 		}
+		if msg == "switch_to_input" {
+			m.state = stateInput
+			m.input.input = ""
+		}
+		if msg == "switch_to_compare" {
+			m.state = stateCompareInput
+			m.compareInput.step = 0
+			m.compareInput.repo1 = ""
+			m.compareInput.repo2 = ""
+		}
+		if msg == "switch_to_settings" {
+			m.state = stateSettings
+		}
+		if msg == "switch_to_history" {
+			m.state = stateHistory
+			m.historyCursor = 0
+			history, _ := LoadHistory()
+			m.history.entries = history.Entries
+		}
+		if msg == "switch_to_clone" {
+			m.state = stateCloneInput
+			m.cloneInput.input = ""
+		}
 	}
 
 	switch m.state {
@@ -388,7 +611,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.menu.Done = false
 			case 4: // Clone Repository
 				m.state = stateCloneInput
-				m.input = ""
+				m.cloneInput.input = ""
 				m.menu.Done = false
 			case 5: // Settings
 				if m.menu.submenuType == "settings" {
@@ -455,7 +678,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch msg := msg.(type) {
 		case CompareResult:
-			m.compareResult = &msg
+			m.compareResult.result = &msg
 			m.state = stateCompareResult
 			m.err = nil
 		case error:
@@ -518,9 +741,8 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.progress = nil
 			m.cacheStatus = "fresh"
 			// Save to history
-			if m.history == nil {
-				m.history, _ = LoadHistory()
-			}
+			history, _ := LoadHistory()
+			m.history.entries = history.Entries
 			m.history.AddEntry(result)
 			m.history.Save()
 		}
@@ -531,9 +753,8 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.progress = nil
 			m.cacheStatus = "cached"
 			// Save to history
-			if m.history == nil {
-				m.history, _ = LoadHistory()
-			}
+			history, _ := LoadHistory()
+			m.history.entries = history.Entries
 			m.history.AddEntry(cachedResult.Result)
 			m.history.Save()
 		}
@@ -601,23 +822,23 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.historyCursor--
 				}
 			case "down", "j":
-				if m.history != nil && m.historyCursor < len(m.history.Entries)-1 {
+				if m.history != nil && m.historyCursor < len(m.history.entries)-1 {
 					m.historyCursor++
 				}
 			case "enter":
 				// Re-analyze selected repo
-				if m.history != nil && len(m.history.Entries) > 0 {
-					repoName := m.history.Entries[m.historyCursor].RepoName
+				if m.history != nil && len(m.history.entries) > 0 {
+					repoName := m.history.entries[m.historyCursor].RepoName
 					m.input.input = repoName
 					m.state = stateLoading
 					cmds = append(cmds, m.analyzeRepo(repoName), TickProgressCmd())
 				}
 			case "d":
 				// Delete selected entry
-				if m.history != nil && len(m.history.Entries) > 0 {
+				if m.history != nil && len(m.history.entries) > 0 {
 					m.history.Delete(m.historyCursor)
 					m.history.Save()
-					if m.historyCursor >= len(m.history.Entries) && m.historyCursor > 0 {
+					if m.historyCursor >= len(m.history.entries) && m.historyCursor > 0 {
 						m.historyCursor--
 					}
 				}
@@ -799,9 +1020,9 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if key, ok := msg.(tea.KeyMsg); ok {
 			if key.String() == "." {
 				if m.dashboard.data.Repo != nil {
-					m.input = m.dashboard.data.Repo.FullName
+					m.input.input = m.dashboard.data.Repo.FullName
 					m.state = stateLoading
-					cmds = append(cmds, m.analyzeRepo(m.input), TickProgressCmd())
+					cmds = append(cmds, m.analyzeRepo(m.input.input), TickProgressCmd())
 					return m, tea.Batch(cmds...)
 				}
 			}
@@ -814,7 +1035,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.dashboard.BackToMenu {
 			m.state = stateMenu
 			m.dashboard.BackToMenu = false
-			m.input = ""
+			m.input.input = ""
 		}
 	case stateTree:
 		newTree, newCmd := m.tree.Update(msg)
@@ -1442,7 +1663,7 @@ func (m MainModel) historyView() string {
 	lines = append(lines, fmt.Sprintf("%-30s │ %-8s │ %-5s │ %-12s │ %s", "Repository", "Stars", "Health", "Maturity", "Analyzed"))
 	lines = append(lines, strings.Repeat("─", 85))
 
-	for i, entry := range m.history.Entries {
+	for i, entry := range m.history.entries {
 		prefix := "  "
 		if i == m.historyCursor {
 			prefix = "▶ "
@@ -1492,7 +1713,7 @@ func (m MainModel) cloneInputView() string {
 	inputContent := fmt.Sprintf(
 		"Enter repository to clone (owner/repo):\n\n> %s█\n\n"+
 			"The repository will be cloned to your Desktop folder.",
-		m.input,
+		m.cloneInput.input,
 	)
 
 	var errMsg string
