@@ -30,7 +30,6 @@ var (
 			Padding(1, 2).
 			Margin(0, 1)
 
-	
 	SelectedStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("#282a36")).
 			Background(lipgloss.Color("#bd93f9")).
@@ -70,8 +69,8 @@ var (
 			MarginRight(1)
 
 	InactiveTabStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#f8f8f2")).
-			Background(lipgloss.Color("#44475a")).
-			Padding(0, 1).
-			MarginRight(1)
+				Foreground(lipgloss.Color("#f8f8f2")).
+				Background(lipgloss.Color("#44475a")).
+				Padding(0, 1).
+				MarginRight(1)
 )

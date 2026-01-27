@@ -159,7 +159,7 @@ func FormatShortcutsForDisplay(shortcuts []KeyboardShortcut, maxWidth int) strin
 	// Group by category
 	categories := make(map[string][]KeyboardShortcut)
 	categoryOrder := []string{}
-	
+
 	for _, sc := range shortcuts {
 		if _, exists := categories[sc.Category]; !exists {
 			categoryOrder = append(categoryOrder, sc.Category)
@@ -196,12 +196,12 @@ func FormatShortcutsCompact(shortcuts []KeyboardShortcut) string {
 			hints = append(hints, hint+": "+sc.Description)
 		}
 	}
-	
+
 	// Limit to first 5 hints
 	if len(hints) > 5 {
 		hints = hints[:5]
 		hints = append(hints, "?: more")
 	}
-	
+
 	return strings.Join(hints, " • ")
 }

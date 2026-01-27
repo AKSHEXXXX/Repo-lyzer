@@ -135,7 +135,7 @@ func (m CompareResultModel) View(width, height int) string {
 		content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			content,
-			"\n" + ErrorStyle.Render(fmt.Sprintf("Status: %v", m.err)),
+			"\n"+ErrorStyle.Render(fmt.Sprintf("Status: %v", m.err)),
 		)
 	}
 

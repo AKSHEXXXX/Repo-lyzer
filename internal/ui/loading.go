@@ -3,16 +3,16 @@ package ui
 import (
 	"fmt"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type LoadingModel struct {
-	spinner     spinner.Model
-	animTick    int
-	progress    *ProgressTracker
-	repoName    string
+	spinner      spinner.Model
+	animTick     int
+	progress     *ProgressTracker
+	repoName     string
 	analysisType string
 }
 

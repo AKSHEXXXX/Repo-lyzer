@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/agnivo988/Repo-lyzer/internal/github"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -93,7 +93,7 @@ func (m *TreeModel) updateVisibleList() {
 func (m *TreeModel) updateFilteredList() {
 	m.visibleList = []*FileNode{}
 	query := strings.ToLower(m.searchQuery)
-	
+
 	for _, node := range m.allNodes {
 		if strings.Contains(strings.ToLower(node.Name), query) {
 			m.visibleList = append(m.visibleList, node)
@@ -253,7 +253,7 @@ func (m TreeModel) getIndent(node *FileNode) string {
 		}
 		return ""
 	}
-	
+
 	depth := m.getNodeDepth(m.root, node)
 	indent := ""
 	for i := 0; i < depth; i++ {

@@ -12,11 +12,11 @@ type CompareReposMsg struct {
 }
 
 type CompareInputModel struct {
-	step     int
-	repo1    string
-	repo2    string
-	cursor   int
-	err      error
+	step   int
+	repo1  string
+	repo2  string
+	cursor int
+	err    error
 }
 
 func NewCompareInputModel() CompareInputModel {

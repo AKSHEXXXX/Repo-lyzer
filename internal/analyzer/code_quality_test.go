@@ -334,7 +334,7 @@ func TestIsTestFile(t *testing.T) {
 func TestScoreBounds(t *testing.T) {
 	// Test with various file trees to ensure scores stay in bounds
 	testCases := [][]github.TreeEntry{
-		{}, // empty
+		{},                                // empty
 		{{Path: "main.go", Type: "blob"}}, // minimal
 		{ // comprehensive
 			{Path: "README.md", Type: "blob"},

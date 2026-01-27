@@ -124,7 +124,6 @@ func runDryRun(repoArg string) error {
 	return nil
 }
 
-
 // analyzeCmd defines the "analyze" command for the CLI.
 // It analyzes a single GitHub repository and prints various metrics and reports.
 // Usage example:

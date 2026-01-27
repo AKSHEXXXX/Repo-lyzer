@@ -1,9 +1,9 @@
 package ui
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/agnivo988/Repo-lyzer/internal/cache"
 	"github.com/agnivo988/Repo-lyzer/internal/config"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type sessionState int
@@ -41,18 +41,18 @@ type MainModel struct {
 	state sessionState
 
 	// Sub-models for different UI states
-	menu             MenuModel
-	input            InputModel
-	loading          LoadingModel
-	compareInput     CompareInputModel
-	compareLoading   CompareLoadingModel
-	compareResult    CompareResultModel
-	settings         SettingsModel
-	help             HelpModel
-	history          HistoryModel
-	favorites        FavoritesModel
-	cloneInput       CloneInputModel
-	cloning          CloningModel
+	menu           MenuModel
+	input          InputModel
+	loading        LoadingModel
+	compareInput   CompareInputModel
+	compareLoading CompareLoadingModel
+	compareResult  CompareResultModel
+	settings       SettingsModel
+	help           HelpModel
+	history        HistoryModel
+	favorites      FavoritesModel
+	cloneInput     CloneInputModel
+	cloning        CloningModel
 
 	// Shared models
 	dashboard DashboardModel

@@ -71,12 +71,12 @@ func TestRepoMaturityScore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			score, level := RepoMaturityScore(tt.repo, tt.commitCount, tt.contribCount, tt.hasReleases)
-			
+
 			if score < tt.wantMinScore || score > tt.wantMaxScore {
-				t.Errorf("RepoMaturityScore() score = %d, want between %d and %d", 
+				t.Errorf("RepoMaturityScore() score = %d, want between %d and %d",
 					score, tt.wantMinScore, tt.wantMaxScore)
 			}
-			
+
 			if tt.wantLevel != "" && level != tt.wantLevel {
 				t.Errorf("RepoMaturityScore() level = %s, want %s", level, tt.wantLevel)
 			}
@@ -99,9 +99,9 @@ func TestRepoMaturityScore_ScoreBounds(t *testing.T) {
 		CreatedAt:   time.Now().Add(-10 * 365 * 24 * time.Hour),
 		Description: "Very mature project",
 	}
-	
+
 	score, _ := RepoMaturityScore(repo, 10000, 1000, true)
-	
+
 	if score < 0 || score > 100 {
 		t.Errorf("Score %d is out of bounds [0, 100]", score)
 	}

@@ -31,7 +31,7 @@ func NormalizeBusFactor(busFactor int) float64 {
 		return 20
 	}
 	// Linear scaling between 1 and 10
-	return 20.0 + (float64(busFactor-1) * 80.0) / 9.0
+	return 20.0 + (float64(busFactor-1)*80.0)/9.0
 }
 
 // GetGrade returns a letter grade based on overall score

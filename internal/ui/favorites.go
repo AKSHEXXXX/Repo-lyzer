@@ -13,11 +13,11 @@ import (
 )
 
 type FavoriteItem struct {
-	RepoName  string    `json:"repo_name"`
-	UseCount  int       `json:"use_count"`
-	LastUsed  time.Time `json:"last_used"`
-	AddedAt   time.Time `json:"added_at"`
-	Notes     string    `json:"notes"`
+	RepoName string    `json:"repo_name"`
+	UseCount int       `json:"use_count"`
+	LastUsed time.Time `json:"last_used"`
+	AddedAt  time.Time `json:"added_at"`
+	Notes    string    `json:"notes"`
 }
 
 type FavoritesModel struct {
@@ -152,17 +152,17 @@ func (f *FavoritesModel) View() string {
 			SubtleStyle.Render("a: add new • q/ESC: back to menu"),
 		)
 
-	if f.width == 0 {
-		return content
-	}
+		if f.width == 0 {
+			return content
+		}
 
-	return lipgloss.Place(
-		f.width,
-		f.height,
-		lipgloss.Center,
-		lipgloss.Center,
-		content,
-	)
+		return lipgloss.Place(
+			f.width,
+			f.height,
+			lipgloss.Center,
+			lipgloss.Center,
+			content,
+		)
 	}
 
 	// Build favorites list

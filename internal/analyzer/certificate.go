@@ -9,21 +9,21 @@ import (
 
 // CertificateData holds all the data needed to generate a repository certificate
 type CertificateData struct {
-	RepoName        string
-	Owner           string
-	Description     string
-	Stars           int
-	Forks           int
-	OpenIssues      int
-	CreatedAt       string
-	UpdatedAt       string
+	RepoName    string
+	Owner       string
+	Description string
+	Stars       int
+	Forks       int
+	OpenIssues  int
+	CreatedAt   string
+	UpdatedAt   string
 
 	// Scores
-	HealthScore     int
-	MaturityScore   int
-	MaturityLevel   string
-	BusFactor       int
-	BusRisk         string
+	HealthScore   int
+	MaturityScore int
+	MaturityLevel string
+	BusFactor     int
+	BusRisk       string
 
 	// Activity
 	CommitsLastYear int
@@ -35,9 +35,9 @@ type CertificateData struct {
 	LanguageCount   int
 
 	// Calculated overall score
-	OverallScore    int
-	Grade           string
-	Uses            []string
+	OverallScore int
+	Grade        string
+	Uses         []string
 }
 
 // CalculateOverallScore computes a weighted overall score from all metrics
