@@ -1,23 +1,9 @@
 package ui
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
-
-	"github.com/agnivo988/Repo-lyzer/internal/analyzer"
 	"github.com/agnivo988/Repo-lyzer/internal/cache"
 	"github.com/agnivo988/Repo-lyzer/internal/config"
-	"github.com/agnivo988/Repo-lyzer/internal/github"
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type sessionState int
@@ -426,26 +412,57 @@ type MainModel struct {
 	cacheStatus   string
 }
 
-// NewMainModel creates a new main application model with default settings.
-// It initializes all sub-models (menu, dashboard, tree, etc.) and sets up
-// the spinner with appropriate styling for the loading state.
-// Returns the initialized MainModel with state set to menu.
-func NewMainModel() MainModel {
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+type BackToMenuMsg struct{}
 
-	// Initialize cache
-	repoCache, _ := cache.NewCache()
+type SwitchToInputMsg struct{}
 
-	// Load application settings
-	appConfig, _ := config.LoadSettings()
+type ErrorMsg error
 
-	// Apply saved theme
-	if appConfig != nil && appConfig.ThemeName != "" {
-		SetThemeByName(appConfig.ThemeName)
-	}
+type MainModel struct {
+	state sessionState
 
+	// Sub-models for different UI states
+	menu           MenuModel
+	input          InputModel
+	loading        LoadingModel
+	compareInput   CompareInputModel
+	compareLoading CompareLoadingModel
+	compareResult  CompareResultModel
+	settings       SettingsModel
+	help           HelpModel
+	history        HistoryModel
+	favorites      FavoritesModel
+	cloneInput     CloneInputModel
+	cloning        CloningModel
+
+	// Shared models
+	dashboard DashboardModel
+	tree      TreeModel
+	fileEdit  FileEditModel
+
+	// Shared state
+	windowWidth  int
+	windowHeight int
+	cache        *cache.Cache
+	appConfig    *config.AppSettings
+
+	// Additional state fields
+	historyCursor   int
+	animTick        int
+	compareStep     int
+	compareInput1   string
+	compareInput2   string
+	inTokenInput    bool
+	tokenInput      string
+	settingsOption  string
+	favoritesCursor int
+	analysisType    string
+	helpContent     string
+	err             error
+}
+
+// NewMainModel creates a new MainModel with initialized sub-models
+func NewMainModel(cache *cache.Cache, config *config.AppSettings) MainModel {
 	return MainModel{
 		state:           stateMenu,
 		menu:            NewMenuModel(),
@@ -467,176 +484,66 @@ func NewMainModel() MainModel {
 	}
 }
 
+// Init initializes the Bubble Tea program
 func (m MainModel) Init() tea.Cmd {
-	return m.spinner.Tick
+	return nil
 }
 
+// Update handles messages and updates the model
 func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	var cmds []tea.Cmd
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.windowWidth = msg.Width
 		m.windowHeight = msg.Height
-		// Handle terminal resize
-		if m.windowWidth != msg.Width || m.windowHeight != msg.Height {
-			// Adapt layout accordingly
-			m.windowWidth = msg.Width
-			m.windowHeight = msg.Height
-		}
-		// Propagate to children
-		m.menu.Update(msg)
-		m.dashboard.Update(msg)
-		m.help.Update(msg)
-		newTree, _ := m.tree.Update(msg)
-		m.tree = newTree.(TreeModel)
+		// Update sub-models with window size
+		m.menu.width = msg.Width
+		m.menu.height = msg.Height
 
-	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
-			return m, tea.Quit
-		}
-		// Global shortcuts
-		if msg.String() == "q" && m.state == stateMenu {
-			return m, tea.Quit
-		}
-		// Ctrl+H → Open History from anywhere
-		if msg.String() == "ctrl+h" {
-			m.state = stateHistory
-			m.historyCursor = 0
-			history, _ := LoadHistory()
-			m.history.entries = history.Entries
-			return m, nil
-		}
+	case BackToMenuMsg:
+		m.state = stateMenu
+		return m, nil
 
-	case struct{}:
-		if m.state == stateLoading || m.state == stateCompareLoading {
-			m.animTick++
-			return m, TickProgressCmd()
-		}
+	case SwitchToInputMsg:
+		m.state = stateInput
+		return m, nil
 
-	case string:
-		if msg == "switch_to_tree" {
-			m.state = stateTree
-			// Update tree with current analysis data
-			if m.dashboard.data.Repo != nil {
-				m.tree = NewTreeModel(&m.dashboard.data)
-				// Initialize tree with current window size
-				var cmd tea.Cmd
-				var tm tea.Model
-				tm, cmd = m.tree.Update(tea.WindowSizeMsg{Width: m.windowWidth, Height: m.windowHeight})
-				m.tree = tm.(TreeModel)
-				cmds = append(cmds, cmd)
-			}
-		}
-		if msg == "refresh_data" {
-			// Re-analyze the current repo
-			if m.dashboard.data.Repo != nil {
-				m.state = stateLoading
-				cmds = append(cmds, m.analyzeRepo(m.dashboard.data.Repo.FullName), TickProgressCmd()) // Add TickProgressCmd
-			}
-		}
-		if msg == "add_to_favorites" {
-			// Add current repo to favorites
-			if m.dashboard.data.Repo != nil {
-				if m.favorites.favorites == nil {
-					favs, _ := LoadFavorites()
-					m.favorites.favorites = favs
-				}
-				m.favorites.favorites.Add(m.dashboard.data.Repo.FullName)
-				m.favorites.favorites.Save()
-				m.err = fmt.Errorf("⭐ Added to favorites: %s", m.dashboard.data.Repo.FullName)
-			}
-		}
-		if msg == "switch_to_input" {
-			m.state = stateInput
-			m.input.input = ""
-		}
-		if msg == "switch_to_compare" {
-			m.state = stateCompareInput
-			m.compareInput.step = 0
-			m.compareInput.repo1 = ""
-			m.compareInput.repo2 = ""
-		}
-		if msg == "switch_to_settings" {
-			m.state = stateSettings
-		}
-		if msg == "switch_to_history" {
-			m.state = stateHistory
-			m.historyCursor = 0
-			history, _ := LoadHistory()
-			m.history.entries = history.Entries
-		}
-		if msg == "switch_to_clone" {
-			m.state = stateCloneInput
-			m.cloneInput.input = ""
-		}
+	case AnalyzeRepoMsg:
+		m.state = stateLoading
+		// TODO: Start analysis command
+		return m, nil
+
+	case ErrorMsg:
+		m.err = error(msg)
+		return m, nil
 	}
 
+	// Delegate to current state's sub-model
 	switch m.state {
 	case stateMenu:
-		newMenu, newCmd := m.menu.Update(msg)
-		m.menu = newMenu.(MenuModel)
-		cmds = append(cmds, newCmd)
-
+		menuModel, cmd := m.menu.Update(msg)
+		m.menu = menuModel.(MenuModel)
 		if m.menu.Done {
 			switch m.menu.SelectedOption {
-			case 0: // Analyze
-				if m.menu.submenuType == "analyze" {
-					// Analysis type selection
-					analysisTypes := []string{"quick", "detailed", "custom"}
-					if m.menu.submenuCursor < len(analysisTypes) {
-						m.analysisType = analysisTypes[m.menu.submenuCursor]
-					}
-					m.state = stateInput
-				}
-				m.menu.Done = false
+			case 0: // Analyze Repository
+				m.state = stateInput
 			case 1: // Favorites
 				m.state = stateFavorites
-				m.favoritesCursor = 0
-				favs, _ := LoadFavorites()
-				m.favorites.favorites = favs
-				m.menu.Done = false
-			case 2: // Compare
+			case 2: // Compare Repositories
 				m.state = stateCompareInput
-				m.compareStep = 0
-				m.compareInput1 = ""
-				m.compareInput2 = ""
-				m.menu.Done = false
-			case 3: // History
+			case 3: // View History
 				m.state = stateHistory
-				m.historyCursor = 0
-				history, _ := LoadHistory()
-				m.history.entries = history.Entries
-				m.menu.Done = false
 			case 4: // Clone Repository
 				m.state = stateCloneInput
-				m.cloneInput.input = ""
-				m.menu.Done = false
 			case 5: // Settings
-				if m.menu.submenuType == "settings" {
-					// Settings option selection
-					settingsOptions := []string{"theme", "cache", "export", "token", "reset"}
-					if m.menu.submenuCursor < len(settingsOptions) {
-						m.settingsOption = settingsOptions[m.menu.submenuCursor]
-					}
-					m.state = stateSettings
-				}
-				m.menu.Done = false
+				m.state = stateSettings
 			case 6: // Help
-				if m.menu.submenuType == "help" {
-					// Help option selection
-					helpOptions := []string{"shortcuts", "getting-started", "features", "troubleshooting"}
-					if m.menu.submenuCursor < len(helpOptions) {
-						m.helpContent = helpOptions[m.menu.submenuCursor]
-					}
-					m.state = stateHelp
-				}
-				m.menu.Done = false
+				m.state = stateHelp
 			case 7: // Exit
 				return m, tea.Quit
 			}
+			m.menu.Done = false
 		}
+		return m, cmd
 
 	case stateInput:
 		newInput, cmd := m.input.Update(msg)
@@ -1073,10 +980,9 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.fileEdit.Done = false
 		}
 	}
-
-	return m, tea.Batch(cmds...)
 }
 
+// View renders the current UI state
 func (m MainModel) View() string {
 	switch m.state {
 	case stateMenu:
@@ -1534,557 +1440,10 @@ func (m MainModel) compareRepos(repo1Name, repo2Name string) tea.Cmd {
 	}
 }
 
-func Run() error {
-	p := tea.NewProgram(NewMainModel(), tea.WithAltScreen())
+// Run starts the Bubble Tea program
+func Run(cache *cache.Cache, config *config.AppSettings) error {
+	model := NewMainModel(cache, config)
+	p := tea.NewProgram(model, tea.WithAltScreen())
 	_, err := p.Run()
 	return err
-}
-func sanitizeRepoInput(input string) string {
-	// Remove null bytes and trim spaces
-	clean := strings.ReplaceAll(input, "\x00", "")
-	clean = strings.TrimSpace(clean)
-
-	// Allow full GitHub URLs
-	if strings.Contains(clean, "github.com/") {
-		parts := strings.Split(clean, "github.com/")
-		if len(parts) == 2 {
-			clean = parts[1]
-		}
-	}
-
-	// Remove trailing slash if present
-	clean = strings.TrimSuffix(clean, "/")
-
-	// Validate the final format
-	parts := strings.Split(clean, "/")
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "" // Invalid format
-	}
-
-	return clean
-}
-
-func (m MainModel) favoritesView() string {
-	header := TitleStyle.Render("⭐ Favorite Repositories")
-
-	if m.favorites == nil || len(m.favorites.Items) == 0 {
-		content := lipgloss.JoinVertical(
-			lipgloss.Left,
-			header,
-			BoxStyle.Render("No favorites yet!\n\nAnalyze a repository and press 'b' to bookmark it."),
-			SubtleStyle.Render("a: add new • q/ESC: back to menu"),
-		)
-
-		if m.windowWidth == 0 {
-			return content
-		}
-
-		return lipgloss.Place(
-			m.windowWidth,
-			m.windowHeight,
-			lipgloss.Center,
-			lipgloss.Center,
-			content,
-		)
-	}
-
-	// Build favorites list
-	var lines []string
-	lines = append(lines, fmt.Sprintf("%-35s │ %-10s │ %s", "Repository", "Uses", "Last Used"))
-	lines = append(lines, strings.Repeat("─", 65))
-
-	for i, fav := range m.favorites.Items {
-		prefix := "  "
-		if i == m.favoritesCursor {
-			prefix = "▶ "
-		}
-		line := fmt.Sprintf("%s%-33s │ %-10d │ %s",
-			prefix,
-			fav.RepoName,
-			fav.UseCount,
-			fav.LastUsed.Format("2006-01-02"),
-		)
-		if i == m.favoritesCursor {
-			lines = append(lines, SelectedStyle.Render(line))
-		} else {
-			lines = append(lines, line)
-		}
-	}
-
-	tableBox := BoxStyle.Render(strings.Join(lines, "\n"))
-	footer := SubtleStyle.Render("↑↓: navigate • Enter: analyze • d: remove • a: add new • q/ESC: back")
-
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		tableBox,
-		footer,
-	)
-
-	if m.windowWidth == 0 {
-		return content
-	}
-
-	return lipgloss.Place(
-		m.windowWidth,
-		m.windowHeight,
-		lipgloss.Center,
-		lipgloss.Center,
-		content,
-	)
-}
-
-func (m MainModel) historyView() string {
-	header := TitleStyle.Render("📜 Analysis History")
-
-	if m.history == nil || len(m.history.Entries) == 0 {
-		content := lipgloss.JoinVertical(
-			lipgloss.Left,
-			header,
-			BoxStyle.Render("No history yet. Analyze a repository to get started!"),
-			SubtleStyle.Render("q/ESC: back to menu"),
-		)
-
-		if m.windowWidth == 0 {
-			return content
-		}
-
-		return lipgloss.Place(
-			m.windowWidth,
-			m.windowHeight,
-			lipgloss.Center,
-			lipgloss.Center,
-			content,
-		)
-	}
-
-	// Build history list
-	var lines []string
-	lines = append(lines, fmt.Sprintf("%-30s │ %-8s │ %-5s │ %-12s │ %s", "Repository", "Stars", "Health", "Maturity", "Analyzed"))
-	lines = append(lines, strings.Repeat("─", 85))
-
-	for i, entry := range m.history.entries {
-		prefix := "  "
-		if i == m.historyCursor {
-			prefix = "▶ "
-		}
-		line := fmt.Sprintf("%s%-28s │ ⭐%-6d │ 💚%-3d │ %-12s │ %s",
-			prefix,
-			entry.RepoName,
-			entry.Stars,
-			entry.HealthScore,
-			entry.MaturityLevel,
-			entry.AnalyzedAt.Format("2006-01-02 15:04"),
-		)
-		if i == m.historyCursor {
-			lines = append(lines, SelectedStyle.Render(line))
-		} else {
-			lines = append(lines, line)
-		}
-	}
-
-	tableBox := BoxStyle.Render(strings.Join(lines, "\n"))
-
-	footer := SubtleStyle.Render("↑↓: navigate • Enter: re-analyze • d: delete • c: clear all • q/ESC: back")
-
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		tableBox,
-		footer,
-	)
-
-	if m.windowWidth == 0 {
-		return content
-	}
-
-	return lipgloss.Place(
-		m.windowWidth,
-		m.windowHeight,
-		lipgloss.Center,
-		lipgloss.Center,
-		content,
-	)
-}
-
-func (m MainModel) cloneInputView() string {
-	header := TitleStyle.Render("📥 CLONE REPOSITORY")
-
-	inputContent := fmt.Sprintf(
-		"Enter repository to clone (owner/repo):\n\n> %s█\n\n"+
-			"The repository will be cloned to your Desktop folder.",
-		m.cloneInput.input,
-	)
-
-	var errMsg string
-	if m.err != nil {
-		errMsg = "\n" + ErrorStyle.Render(m.err.Error())
-	}
-
-	footer := SubtleStyle.Render("Enter: clone • ESC: back • Ctrl+U: clear")
-
-	content := lipgloss.JoinVertical(
-		lipgloss.Left,
-		header,
-		BoxStyle.Render(inputContent),
-		errMsg,
-		footer,
-	)
-
-	if m.windowWidth == 0 {
-		return content
-	}
-
-	return lipgloss.Place(
-		m.windowWidth,
-		m.windowHeight,
-		lipgloss.Center,
-		lipgloss.Center,
-		content,
-	)
-}
-
-func (m MainModel) cloningView() string {
-	header := TitleStyle.Render("📥 CLONING REPOSITORY")
-
-	content := fmt.Sprintf(
-		"%s Cloning %s to Desktop...\n\n"+
-			"Please wait while the repository is being cloned.",
-		m.spinner.View(),
-		m.input,
-	)
-
-	return lipgloss.Place(
-		m.windowWidth,
-		m.windowHeight,
-		lipgloss.Center,
-		lipgloss.Center,
-		lipgloss.JoinVertical(
-			lipgloss.Left,
-			header,
-			BoxStyle.Render(content),
-		),
-	)
-}
-
-func (m MainModel) helpView() string {
-	var title string
-	var content string
-
-	switch m.helpContent {
-	case "shortcuts":
-		title = "❓ Keyboard Shortcuts"
-		content = `
-Global:
-  Ctrl+H        Open analysis history
-Main Menu:
-  ↑↓/jk         Navigate menu
-  Enter         Select option
-  q             Quit application
-
-Repository Input:
-  Enter         Start analysis
-  ESC           Back to menu
-  Ctrl+U        Clear input
-  Ctrl+W        Delete word
-  Ctrl+A        Move to start
-  Ctrl+E        Move to end
-
-Dashboard Navigation:
-  ←→/hl         Switch between views
-  1-7           Jump to specific view
-  e             Toggle export menu
-  f             Open file tree
-  r             Refresh data
-  ?/h           Toggle help
-  q/ESC         Go back
-   .            Re-analyze current repository
-
-File Tree:
-  ↑↓/jk         Navigate files
-  Enter         Open file details
-  ESC           Back to dashboard
-
-History:
-  ↑↓/jk         Navigate entries
-  Enter         Re-analyze repository
-  d             Delete entry
-  c             Clear all history
-  q/ESC         Back to menu
-`
-	case "getting-started":
-		title = "🚀 Getting Started"
-		content = `
-Welcome to Repo-lyzer!
-
-1. Choose "Analyze Repository" from the main menu
-2. Enter a repository in the format: owner/repo
-   Example: microsoft/vscode
-3. Select analysis type:
-   - Quick: Fast overview
-   - Detailed: Comprehensive analysis
-   - Custom: Advanced options
-4. Wait for analysis to complete
-5. Navigate through the dashboard views
-6. Export results if needed
-
-For GitHub API access:
-- Set GITHUB_TOKEN environment variable for higher rate limits
-- Private repositories require authentication
-`
-	case "features":
-		title = "✨ Features Guide"
-		content = `
-Repository Analysis:
-  • Health Score: Overall repository health
-  • Bus Factor: Risk of losing key contributors
-  • Maturity Level: Project maturity assessment
-  • Language Breakdown: Programming languages used
-  • Commit Activity: Development activity over time
-  • Top Contributors: Most active contributors
-  • Recruiter Summary: Key insights for hiring
-
-Export Options:
-  • JSON: Structured data for further processing
-  • Markdown: Human-readable reports
-
-Additional Features:
-  • Repository Comparison: Compare multiple repos
-  • Analysis History: Re-analyze previous repos
-  • File Tree: Explore repository structure
-  • GitHub API Status: Monitor rate limit usage
-`
-	case "troubleshooting":
-		title = "🔧 Troubleshooting"
-		content = `
-Common Issues:
-
-Repository Not Found:
-  • Check spelling: owner/repo format
-  • Ensure repository is public or you have access
-  • GitHub API might be rate limited
-
-Analysis Fails:
-  • Check internet connection
-  • Verify GitHub API status
-  • Try again later if rate limited
-
-High Rate Limits:
-  • Set GITHUB_TOKEN environment variable
-  • Authenticated requests: 5000/hour
-  • Unauthenticated: 60/hour
-
-Private Repositories:
-  • Require GITHUB_TOKEN with repo scope
-  • Token must have access to the repository
-
-Performance:
-  • Detailed analysis takes longer
-  • Large repositories may take several minutes
-  • Use Quick analysis for fast results
-`
-	default:
-		title = "❓ Help"
-		content = `
-Select a help topic from the menu above.
-`
-	}
-
-	helpContent := TitleStyle.Render(title) + "\n\n" + content + "\n\n" + SubtleStyle.Render("Press ESC or q to go back")
-
-	box := BoxStyle.Render(helpContent)
-
-	if m.windowWidth == 0 {
-		return box
-	}
-
-	return lipgloss.Place(
-		m.windowWidth, m.windowHeight,
-		lipgloss.Center, lipgloss.Center,
-		box,
-	)
-}
-
-func (m MainModel) settingsView() string {
-	var title string
-	var content string
-
-	switch m.settingsOption {
-	case "theme":
-		title = "🎨 Theme Settings"
-
-		// Build theme list with current indicator
-		themeList := ""
-		for i, theme := range AvailableThemes {
-			indicator := "  "
-			if i == CurrentThemeIndex {
-				indicator = "▶ "
-			}
-			themeList += fmt.Sprintf("  %s[%d] %s\n", indicator, i+1, theme.Name)
-		}
-
-		content = fmt.Sprintf(`
-Current theme: %s
-
-Available themes:
-%s
-Keybindings:
-  • Press 1-7 to select a theme
-  • Press 't' to cycle through themes
-
-Theme changes are applied immediately!
-`, CurrentTheme.Name, themeList)
-	case "cache":
-		title = "💾 Cache Settings"
-
-		// Get cache stats
-		cacheInfo := "Cache not initialized"
-		if m.cache != nil {
-			stats := m.cache.GetStats()
-			cfg := m.cache.GetConfig()
-
-			enabledStr := "Disabled"
-			if cfg.Enabled {
-				enabledStr = "Enabled"
-			}
-			autoStr := "Off"
-			if cfg.AutoCache {
-				autoStr = "On"
-			}
-
-			cacheInfo = fmt.Sprintf(`
-Status: %s
-Auto-cache: %s
-TTL: %s
-Max Size: %d MB
-
-Statistics:
-  • Total repos cached: %d
-  • Valid (not expired): %d
-  • Expired: %d
-  • Cache size: %.2f MB
-  • Location: %s
-
-Keybindings:
-  • Press 'e' to toggle caching
-  • Press 'a' to toggle auto-cache
-  • Press 'c' to clear all cache
-  • Press 'x' to clean expired entries
-`, enabledStr, autoStr, cache.FormatTTL(cfg.TTL), cfg.MaxSize,
-				stats.TotalRepos, stats.ValidRepos, stats.ExpiredRepos,
-				stats.TotalSizeMB, stats.CacheDir)
-		}
-		content = cacheInfo
-	case "export":
-		title = "📤 Export Options"
-
-		// Get current export settings
-		currentFormat := "JSON"
-		exportDir := "~/Downloads/"
-		if m.appConfig != nil {
-			currentFormat = m.appConfig.DefaultExportFormat.DisplayName()
-			exportDir = m.appConfig.ExportDirectory
-		}
-
-		// Build format list with indicator
-		formatList := ""
-		formats := []string{"JSON", "Markdown", "CSV", "HTML", "PDF"}
-		for _, f := range formats {
-			indicator := "  "
-			if f == currentFormat {
-				indicator = "▶ "
-			}
-			formatList += fmt.Sprintf("  %s%s\n", indicator, f)
-		}
-
-		content = fmt.Sprintf(`
-Current export format: %s
-Export directory: %s
-
-Available formats:
-%s
-Keybindings:
-  • Press 'f' to cycle through formats
-
-Export formats are saved automatically!
-`, currentFormat, exportDir, formatList)
-	case "token":
-		title = "🔑 GitHub Token"
-
-		// Check if in token input mode
-		if m.inTokenInput {
-			content = fmt.Sprintf(`
-Enter GitHub Personal Access Token:
-
-> %s█
-
-Press Enter to save, ESC to cancel.
-`, m.tokenInput)
-		} else {
-			// Show current token status
-			tokenStatus := "❌ Not configured"
-			tokenDisplay := ""
-			if m.appConfig != nil && m.appConfig.HasGitHubToken() {
-				tokenStatus = "✅ Configured"
-				tokenDisplay = fmt.Sprintf("\nToken: %s", m.appConfig.GetMaskedToken())
-			}
-
-			// Check environment variable
-			envToken := os.Getenv("GITHUB_TOKEN")
-			envStatus := "Not set"
-			if envToken != "" {
-				envStatus = "Set (will be used if app token not configured)"
-			}
-
-			content = fmt.Sprintf(`
-GitHub API Token Configuration:
-
-Status: %s%s
-Environment: %s
-
-Keyindings:
-  • Press 'i' to input a new token
-  • Press 'c' to clear saved token
-
-Benefits of using a token:
-  • Higher API rate limits (5000 vs 60 requests/hour)
-  • Access to private repositories
-  • More detailed analysis
-`, tokenStatus, tokenDisplay, envStatus)
-		}
-	case "reset":
-		title = "🔄 Reset to Defaults"
-		content = `
-Reset all settings to default values:
-
-This will:
-  • Clear all saved settings
-  • Reset theme to default
-  • Clear export preferences
-  • Remove custom configurations
-
-Warning: This action cannot be undone.
-
-Press 'y' to confirm reset, or ESC to cancel.
-`
-	default:
-		title = "⚙️ Settings"
-		content = `
-Select a settings option from the menu.
-`
-	}
-
-	settingsContent := TitleStyle.Render(title) + "\n\n" + content + "\n\n" + SubtleStyle.Render("Press ESC or q to go back")
-
-	box := BoxStyle.Render(settingsContent)
-
-	if m.windowWidth == 0 {
-		return box
-	}
-
-	return lipgloss.Place(
-		m.windowWidth, m.windowHeight,
-		lipgloss.Center, lipgloss.Center,
-		box,
-	)
 }

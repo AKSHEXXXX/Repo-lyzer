@@ -3,29 +3,29 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jung-kurt/gofpdf"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time" 
-	"github.com/jung-kurt/gofpdf"
+	"time"
 )
 
 // ValidateExportFormat checks if the given format is supported and returns a descriptive error if not
 func ValidateExportFormat(format string) error {
 	supportedFormats := []string{"json", "markdown", "csv", "html", "pdf"}
-	
+
 	// Convert to lowercase for case-insensitive comparison
 	formatLower := strings.ToLower(format)
-	
+
 	for _, supported := range supportedFormats {
 		if formatLower == supported {
 			return nil
 		}
 	}
-	
-	return fmt.Errorf("unsupported export format '%s'. Supported formats are: %s", 
+
+	return fmt.Errorf("unsupported export format '%s'. Supported formats are: %s",
 		format, strings.Join(supportedFormats, ", "))
 }
 
@@ -238,7 +238,7 @@ func ExportPDF(data AnalysisResult, _ string) (string, error) {
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
-	
+
 	pdf.SetFont("Arial", "B", 16)
 	pdf.Cell(0, 10, "Analysis for "+data.Repo.FullName)
 	pdf.Ln(12)
@@ -288,16 +288,16 @@ func ExportPDF(data AnalysisResult, _ string) (string, error) {
 	for _, bytes := range data.Languages {
 		total += bytes
 	}
-		if total == 0 {  
-		pdf.Cell(0, 8, "No language data available")  
-		pdf.Ln(6)  
-	} else {  
-		for lang, bytes := range data.Languages {  
-			pct := float64(bytes) / float64(total) * 100  
-			pdf.Cell(0, 8, fmt.Sprintf("- %s: %.1f%%", lang, pct))  
-			pdf.Ln(6)  
-		}  
-	}  
+	if total == 0 {
+		pdf.Cell(0, 8, "No language data available")
+		pdf.Ln(6)
+	} else {
+		for lang, bytes := range data.Languages {
+			pct := float64(bytes) / float64(total) * 100
+			pdf.Cell(0, 8, fmt.Sprintf("- %s: %.1f%%", lang, pct))
+			pdf.Ln(6)
+		}
+	}
 	pdf.Ln(9)
 
 	pdf.SetFont("Arial", "B", 14)
@@ -508,10 +508,10 @@ func ExportAnalysis(data AnalysisResult, format string) (string, error) {
 	if err := ValidateExportFormat(format); err != nil {
 		return "", err
 	}
-	
+
 	// Convert format to lowercase for consistency
 	format = strings.ToLower(format)
-	
+
 	// Call the appropriate export function based on format
 	switch format {
 	case "json":

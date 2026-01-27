@@ -234,9 +234,9 @@ func (m MenuModel) View() string {
 
 	// Menu items with keyboard shortcuts
 	shortcuts := []string{"a", "c", "h", "d", "s", "?", "q"}
-	
+
 	var menuItems []string
-	
+
 	for i, choice := range m.choices {
 		shortcut := ""
 		if i < len(shortcuts) {
@@ -253,12 +253,12 @@ func (m MenuModel) View() string {
 	}
 
 	menuContent := lipgloss.JoinVertical(lipgloss.Left, menuItems...)
-	
+
 	footer := SubtleStyle.Render("\n↑↓: navigate • Enter: select")
 
 	content := lipgloss.JoinVertical(
-		lipgloss.Center, 
-		logoView, 
+		lipgloss.Center,
+		logoView,
 		"\n",
 		BoxStyle.Render(menuContent),
 		footer,
@@ -295,7 +295,7 @@ func (m MenuModel) submenuView(logoView string) string {
 	}
 
 	header := TitleStyle.Render(title)
-	
+
 	var menuItems []string
 
 	for i, choice := range m.submenuChoices {

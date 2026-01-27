@@ -10,12 +10,12 @@ import (
 )
 
 // summaryCmd defines the "summary" command for the CLI.
-// It provides a quick 5-line summary of a GitHub repository.
+// It provides a quick 6-line summary of a GitHub repository.
 // Usage example:
 //   repo-lyzer summary octocat/Hello-World
 var summaryCmd = &cobra.Command{
 	Use:   "summary owner/repo",
-	Short: "Display a quick 5-line repository summary",
+	Short: "Display a quick 6-line repository summary",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Validate the repository URL format

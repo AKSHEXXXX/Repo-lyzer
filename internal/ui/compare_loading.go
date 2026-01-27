@@ -64,7 +64,7 @@ func (m CompareLoadingModel) View(width, height int) string {
 	)
 }
 
-func (m *CompareLoadingModel) SetRepoNames(repo1, repo2 string) {
+func (m *CompareLoadingModel) SetRepos(repo1, repo2 string) {
 	m.repo1 = repo1
 	m.repo2 = repo2
 }

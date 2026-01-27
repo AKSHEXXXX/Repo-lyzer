@@ -23,11 +23,11 @@ type LicenseInfo struct {
 
 // LicenseAnalysis holds complete license analysis results
 type LicenseAnalysis struct {
-	MainLicense    *LicenseInfo   `json:"main_license"`    // Primary project license
-	OtherLicenses  []LicenseInfo  `json:"other_licenses"`  // Other licenses found
-	Compatibility  string         `json:"compatibility"`   // "compatible", "warning", "conflict"
-	Warnings       []string       `json:"warnings"`        // Potential issues
-	LicenseScore   int            `json:"license_score"`   // 0-100 score
+	MainLicense   *LicenseInfo  `json:"main_license"`   // Primary project license
+	OtherLicenses []LicenseInfo `json:"other_licenses"` // Other licenses found
+	Compatibility string        `json:"compatibility"`  // "compatible", "warning", "conflict"
+	Warnings      []string      `json:"warnings"`       // Potential issues
+	LicenseScore  int           `json:"license_score"`  // 0-100 score
 }
 
 // Known license patterns for detection

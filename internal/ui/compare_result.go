@@ -97,7 +97,7 @@ func (m CompareResultModel) View(width, height int) string {
 	rows := []string{
 		fmt.Sprintf("%-20s │ %-25s │ %-25s", "Metric", r1.Repo.FullName, r2.Repo.FullName),
 		strings.Repeat("─", 75),
-		fmt.Sprintf("%-20s │ %-25d │ %-25d", "⭐ Stars", r1.Repo.Stars, r2.Repo.Stars),
+		fmt.Sprintf("%-20s │ %-25d │ %-25d", "⭐ Stars", r1.Repo.Stars, r2.Repo.Forks),
 		fmt.Sprintf("%-20s │ %-25d │ %-25d", "🍴 Forks", r1.Repo.Forks, r2.Repo.Forks),
 		fmt.Sprintf("%-20s │ %-25d │ %-25d", "📦 Commits (1y)", len(r1.Commits), len(r2.Commits)),
 		fmt.Sprintf("%-20s │ %-25d │ %-25d", "👥 Contributors", len(r1.Contributors), len(r2.Contributors)),
@@ -135,7 +135,7 @@ func (m CompareResultModel) View(width, height int) string {
 		content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			content,
-			"\n" + ErrorStyle.Render(fmt.Sprintf("Status: %v", m.err)),
+			"\n"+ErrorStyle.Render(fmt.Sprintf("Status: %v", m.err)),
 		)
 	}
 

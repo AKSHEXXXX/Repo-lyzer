@@ -9,10 +9,10 @@ import (
 )
 
 type LoadingModel struct {
-	spinner     spinner.Model
-	animTick    int
-	progress    *ProgressTracker
-	repoName    string
+	spinner      spinner.Model
+	animTick     int
+	progress     *ProgressTracker
+	repoName     string
 	analysisType string
 }
 

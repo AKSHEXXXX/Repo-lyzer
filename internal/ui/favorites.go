@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -60,7 +62,35 @@ func (f *Favorites) UpdateUsage(repoName string) {
 	}
 }
 
-func (f *Favorites) IsFavorite(repoName string) bool {
+	// Add new item
+	f.Items = append(f.Items, FavoriteItem{
+		RepoName: repoName,
+		UseCount: 1,
+		LastUsed: time.Now(),
+		AddedAt:  time.Now(),
+	})
+}
+
+func (f *FavoritesModel) Remove(repoName string) {
+	for i, item := range f.Items {
+		if item.RepoName == repoName {
+			f.Items = append(f.Items[:i], f.Items[i+1:]...)
+			return
+		}
+	}
+}
+
+func (f *FavoritesModel) UpdateUsage(repoName string) {
+	for i, item := range f.Items {
+		if item.RepoName == repoName {
+			f.Items[i].UseCount++
+			f.Items[i].LastUsed = time.Now()
+			return
+		}
+	}
+}
+
+func (f *FavoritesModel) IsFavorite(repoName string) bool {
 	for _, item := range f.Items {
 		if item.RepoName == repoName {
 			return true
@@ -69,30 +99,22 @@ func (f *Favorites) IsFavorite(repoName string) bool {
 	return false
 }
 
-func (f *Favorites) GetTopFavorites(n int) []Favorite {
-	if len(f.Items) <= n {
+func (f *FavoritesModel) GetTopFavorites(limit int) []FavoriteItem {
+	if limit <= 0 {
+		return []FavoriteItem{}
+	}
+	if limit >= len(f.Items) {
 		return f.Items
 	}
-	// Sort by UseCount descending
-	sorted := make([]Favorite, len(f.Items))
-	copy(sorted, f.Items)
-	for i := 0; i < len(sorted)-1; i++ {
-		for j := i + 1; j < len(sorted); j++ {
-			if sorted[j].UseCount > sorted[i].UseCount {
-				sorted[i], sorted[j] = sorted[j], sorted[i]
-			}
-		}
-	}
-	return sorted[:n]
+	return f.Items[:limit]
 }
 
-func (f *Favorites) Clear() error {
-	f.Items = []Favorite{}
-	return f.Save()
+func (f *FavoritesModel) Clear() {
+	f.Items = []FavoriteItem{}
 }
 
-func (f *Favorites) Save() error {
-	configDir, err := getConfigDir()
+func (f *FavoritesModel) Save() error {
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
 	}
@@ -103,96 +125,59 @@ func (f *Favorites) Save() error {
 		return err
 	}
 
-	return os.WriteFile(favoritesPath, data, 0644)
+	return os.WriteFile(filePath, data, 0644)
 }
 
-func LoadFavorites() (*Favorites, error) {
-	configDir, err := getConfigDir()
+func LoadFavorites() (*FavoritesModel, error) {
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return &Favorites{Items: []Favorite{}}, nil
+		return NewFavoritesModel(), err
 	}
 
-	favoritesPath := filepath.Join(configDir, "favorites.json")
-	data, err := os.ReadFile(favoritesPath)
+	filePath := filepath.Join(home, ".repo-lyzer", "favorites.json")
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &Favorites{Items: []Favorite{}}, nil
+			return NewFavoritesModel(), nil
 		}
-		return nil, err
+		return NewFavoritesModel(), err
 	}
 
-	var favorites Favorites
+	var favorites FavoritesModel
 	if err := json.Unmarshal(data, &favorites); err != nil {
-		return &Favorites{Items: []Favorite{}}, nil
+		return NewFavoritesModel(), err
 	}
+
+	// Sort by last used (most recent first)
+	sort.Slice(favorites.Items, func(i, j int) bool {
+		return favorites.Items[i].LastUsed.After(favorites.Items[j].LastUsed)
+	})
 
 	return &favorites, nil
 }
 
-func getConfigDir() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
+func (f *FavoritesModel) View() string {
+	header := TitleStyle.Render("⭐ Favorite Repositories")
 
-	configDir := filepath.Join(home, ".repo-lyzer")
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return "", err
-	}
+	if len(f.Items) == 0 {
+		content := lipgloss.JoinVertical(
+			lipgloss.Left,
+			header,
+			BoxStyle.Render("No favorites yet!\n\nAnalyze a repository and press 'b' to bookmark it."),
+			SubtleStyle.Render("a: add new • q/ESC: back to menu"),
+		)
 
-	return configDir, nil
-}
-
-type FavoritesModel struct {
-	favorites *Favorites
-	cursor    int
-}
-
-func NewFavoritesModel() FavoritesModel {
-	return FavoritesModel{}
-}
-
-func (m FavoritesModel) Update(msg tea.Msg) (FavoritesModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
-			}
-		case "down", "j":
-			if m.favorites != nil && m.cursor < len(m.favorites.Items)-1 {
-				m.cursor++
-			}
-		case "enter":
-			// Analyze selected favorite
-			if m.favorites != nil && len(m.favorites.Items) > 0 {
-				repoName := m.favorites.Items[m.cursor].RepoName
-				m.favorites.UpdateUsage(repoName)
-				if err := m.favorites.Save(); err != nil {
-					log.Printf("Failed to save favorites: %v", err)
-					return m, func() tea.Msg { return StatusMsg{Message: "Failed to save favorites: " + err.Error(), IsError: true} }
-				}
-				return m, func() tea.Msg { return AnalyzeRepoMsg{repoName: repoName} }
-			}
-		case "d":
-			// Remove from favorites
-			if m.favorites != nil && len(m.favorites.Items) > 0 {
-				m.favorites.Remove(m.favorites.Items[m.cursor].RepoName)
-				if err := m.favorites.Save(); err != nil {
-					log.Printf("Failed to save favorites: %v", err)
-					return m, func() tea.Msg { return StatusMsg{Message: "Failed to save favorites: " + err.Error(), IsError: true} }
-				}
-				if m.cursor >= len(m.favorites.Items) && m.cursor > 0 {
-					m.cursor--
-				}
-			}
-		case "a":
-			// Add new favorite (go to input)
-			return m, func() tea.Msg { return SwitchToInputMsg{} }
-		case "q", "esc":
-			return m, func() tea.Msg { return BackToMenuMsg{} }
+		if f.width == 0 {
+			return content
 		}
+
+		return lipgloss.Place(
+			f.width,
+			f.height,
+			lipgloss.Center,
+			lipgloss.Center,
+			content,
+		)
 	}
 	return m, nil
 }
@@ -231,14 +216,14 @@ func (m FavoritesModel) View(width, height int) string {
 			fav.UseCount,
 			fav.LastUsed.Format("2006-01-02"),
 		)
-		if i == m.cursor {
+		if i == 0 {
 			lines = append(lines, SelectedStyle.Render(line))
 		} else {
 			lines = append(lines, line)
 		}
 	}
 
-	tableBox := BoxStyle.Render(lipgloss.JoinVertical(lipgloss.Left, lines...))
+	tableBox := BoxStyle.Render(strings.Join(lines, "\n"))
 	footer := SubtleStyle.Render("↑↓: navigate • Enter: analyze • d: remove • a: add new • q/ESC: back")
 
 	content := lipgloss.JoinVertical(
@@ -248,21 +233,15 @@ func (m FavoritesModel) View(width, height int) string {
 		footer,
 	)
 
+	if f.width == 0 {
+		return content
+	}
+
 	return lipgloss.Place(
-		width, height,
-		lipgloss.Center, lipgloss.Center,
+		f.width,
+		f.height,
+		lipgloss.Center,
+		lipgloss.Center,
 		content,
 	)
-}
-
-func (m *FavoritesModel) SetFavorites(favorites *Favorites) {
-	m.favorites = favorites
-}
-
-func (m *FavoritesModel) GetCursor() int {
-	return m.cursor
-}
-
-func (m *FavoritesModel) SetCursor(cursor int) {
-	m.cursor = cursor
 }

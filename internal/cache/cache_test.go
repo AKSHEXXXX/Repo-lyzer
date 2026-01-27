@@ -22,7 +22,7 @@ func TestNewCache(t *testing.T) {
 
 func TestDefaultConfig(t *testing.T) {
 	config := DefaultConfig()
-	
+
 	if !config.Enabled {
 		t.Error("Default config should be enabled")
 	}
@@ -136,7 +136,7 @@ func TestCache_GetStats(t *testing.T) {
 	cache.Set("test/stats2", "data2")
 
 	stats := cache.GetStats()
-	
+
 	if stats.TotalRepos != 2 {
 		t.Errorf("TotalRepos = %d, want 2", stats.TotalRepos)
 	}
@@ -155,7 +155,7 @@ func TestCache_HasCache(t *testing.T) {
 	}
 
 	testRepo := "test/has-cache"
-	
+
 	// Should not exist initially
 	if cache.HasCache(testRepo) {
 		t.Error("HasCache() should return false for non-existent repo")
@@ -245,7 +245,7 @@ func TestGetCacheDir(t *testing.T) {
 
 	home, _ := os.UserHomeDir()
 	expected := filepath.Join(home, ".repo-lyzer", "cache")
-	
+
 	if dir != expected {
 		t.Errorf("getCacheDir() = %s, want %s", dir, expected)
 	}

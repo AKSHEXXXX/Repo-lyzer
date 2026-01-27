@@ -456,12 +456,12 @@ func (m DashboardModel) contributorsView() string {
 			barLen = 1
 		}
 		bar := strings.Repeat("█", barLen)
-		
+
 		avatar := ""
 		if c.AvatarURL != "" {
 			avatar = fmt.Sprintf(" 👤 %s", c.AvatarURL)
 		}
-		
+
 		lines = append(lines, fmt.Sprintf("%2d. %-20s %s %d%s", i+1, c.Login, bar, c.Commits, avatar))
 	}
 

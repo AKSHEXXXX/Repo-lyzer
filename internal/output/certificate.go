@@ -16,30 +16,30 @@ import (
 
 var (
 	certTitleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#FFD700")).
-		Align(lipgloss.Center).
-		Margin(1, 0)
+			Bold(true).
+			Foreground(lipgloss.Color("#FFD700")).
+			Align(lipgloss.Center).
+			Margin(1, 0)
 
 	certSectionStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#00FF87")).
-		MarginTop(1)
+				Bold(true).
+				Foreground(lipgloss.Color("#00FF87")).
+				MarginTop(1)
 
 	certKeyStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#00E5FF")).
-		Bold(true)
+			Foreground(lipgloss.Color("#00E5FF")).
+			Bold(true)
 
 	certValueStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFFFFF"))
+			Foreground(lipgloss.Color("#FFFFFF"))
 
 	scoreStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFB000")).
-		Bold(true)
+			Foreground(lipgloss.Color("#FFB000")).
+			Bold(true)
 
 	gradeStyle = lipgloss.NewStyle().
-		Bold(true).
-		Align(lipgloss.Center)
+			Bold(true).
+			Align(lipgloss.Center)
 )
 
 // PrintCertificate displays a formatted repository certificate

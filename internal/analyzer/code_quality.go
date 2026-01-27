@@ -11,27 +11,27 @@ import (
 
 // CodeQualityMetrics contains comprehensive code quality analysis
 type CodeQualityMetrics struct {
-	OverallScore      int                    `json:"overall_score"`       // 0-100
-	Grade             string                 `json:"grade"`               // A, B, C, D, F
-	DocumentationScore int                   `json:"documentation_score"` // 0-100
-	TestingScore      int                    `json:"testing_score"`       // 0-100
-	StructureScore    int                    `json:"structure_score"`     // 0-100
-	MaintenanceScore  int                    `json:"maintenance_score"`   // 0-100
-	HasReadme         bool                   `json:"has_readme"`
-	HasContributing   bool                   `json:"has_contributing"`
-	HasLicense        bool                   `json:"has_license"`
-	HasChangelog      bool                   `json:"has_changelog"`
-	HasCodeOfConduct  bool                   `json:"has_code_of_conduct"`
-	HasTests          bool                   `json:"has_tests"`
-	HasCI             bool                   `json:"has_ci"`
-	HasDocker         bool                   `json:"has_docker"`
-	HasEditorConfig   bool                   `json:"has_editorconfig"`
-	HasGitignore      bool                   `json:"has_gitignore"`
-	TestFrameworks    []string               `json:"test_frameworks"`
-	CIProviders       []string               `json:"ci_providers"`
-	FileStats         FileStatistics         `json:"file_stats"`
-	CodeSmells        []CodeSmell            `json:"code_smells"`
-	Recommendations   []string               `json:"recommendations"`
+	OverallScore       int            `json:"overall_score"`       // 0-100
+	Grade              string         `json:"grade"`               // A, B, C, D, F
+	DocumentationScore int            `json:"documentation_score"` // 0-100
+	TestingScore       int            `json:"testing_score"`       // 0-100
+	StructureScore     int            `json:"structure_score"`     // 0-100
+	MaintenanceScore   int            `json:"maintenance_score"`   // 0-100
+	HasReadme          bool           `json:"has_readme"`
+	HasContributing    bool           `json:"has_contributing"`
+	HasLicense         bool           `json:"has_license"`
+	HasChangelog       bool           `json:"has_changelog"`
+	HasCodeOfConduct   bool           `json:"has_code_of_conduct"`
+	HasTests           bool           `json:"has_tests"`
+	HasCI              bool           `json:"has_ci"`
+	HasDocker          bool           `json:"has_docker"`
+	HasEditorConfig    bool           `json:"has_editorconfig"`
+	HasGitignore       bool           `json:"has_gitignore"`
+	TestFrameworks     []string       `json:"test_frameworks"`
+	CIProviders        []string       `json:"ci_providers"`
+	FileStats          FileStatistics `json:"file_stats"`
+	CodeSmells         []CodeSmell    `json:"code_smells"`
+	Recommendations    []string       `json:"recommendations"`
 }
 
 // FileStatistics contains file-related metrics
@@ -41,10 +41,10 @@ type FileStatistics struct {
 	TestFiles        int            `json:"test_files"`
 	DocFiles         int            `json:"doc_files"`
 	ConfigFiles      int            `json:"config_files"`
-	TestRatio        float64        `json:"test_ratio"`        // test files / source files
-	AvgPathDepth     float64        `json:"avg_path_depth"`    // average directory depth
+	TestRatio        float64        `json:"test_ratio"`     // test files / source files
+	AvgPathDepth     float64        `json:"avg_path_depth"` // average directory depth
 	FilesByExtension map[string]int `json:"files_by_extension"`
-	LargestFiles     []string       `json:"largest_files"`     // files with deep paths (potential complexity)
+	LargestFiles     []string       `json:"largest_files"` // files with deep paths (potential complexity)
 }
 
 // CodeSmell represents a potential code quality issue
@@ -98,14 +98,14 @@ func AnalyzeCodeQuality(repo *github.Repo, fileTree []github.TreeEntry, language
 
 func analyzeFileTree(metrics *CodeQualityMetrics, fileTree []github.TreeEntry) {
 	var totalDepth int
-	
+
 	for _, entry := range fileTree {
 		if entry.Type != "blob" {
 			continue
 		}
 
 		metrics.FileStats.TotalFiles++
-		
+
 		// Calculate path depth
 		depth := strings.Count(entry.Path, "/")
 		totalDepth += depth
@@ -123,7 +123,7 @@ func analyzeFileTree(metrics *CodeQualityMetrics, fileTree []github.TreeEntry) {
 
 		// Categorize files
 		lowerPath := strings.ToLower(entry.Path)
-		
+
 		if isSourceFile(lowerPath) {
 			metrics.FileStats.SourceFiles++
 		}

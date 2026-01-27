@@ -1,15 +1,10 @@
-# Menu Navigation Code Duplication Refactoring
+# TODO: Fix Go Compilation Errors
 
-## Current Status
-- [x] Analyze menu.go for code duplication in cursor navigation
-- [x] Create refactoring plan with helper functions
-- [x] Get user approval for plan
+## Errors to Fix
+- [ ] internal/ui/favorites.go: Remove unused import "github.com/charmbracelet/bubbletea"
+- [ ] internal/ui/favorites.go: Add width and height fields to FavoritesModel and use them in View()
+- [ ] internal/ui/compare_input.go: Remove unused imports "strings" and "github.com/charmbracelet/lipgloss"
+- [ ] internal/ui/settings.go: Remove unused import "os"
 
-## Implementation Steps
-- [ ] Add helper functions: moveCursorUp(), moveCursorDown(), moveCursorHome(), moveCursorEnd()
-- [ ] Refactor "up"/"k"/"w"/"W" key handling to use moveCursorUp()
-- [ ] Refactor "down"/"j"/"S" key handling to use moveCursorDown()
-- [ ] Refactor "home"/"g" key handling to use moveCursorHome()
-- [ ] Refactor "end"/"G" key handling to use moveCursorEnd()
-- [ ] Test navigation works correctly in both main menu and submenus
-- [ ] Verify edge cases (empty menus, single item menus)
+## Testing
+- [ ] Run `go build ./...` to verify all errors are resolved

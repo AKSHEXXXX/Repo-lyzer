@@ -11,13 +11,13 @@ import (
 
 // AccessibilityConfig holds accessibility settings
 type AccessibilityConfig struct {
-	HighContrast     bool   // Use high contrast colors
-	LargeText        bool   // Use larger text where possible
-	ReducedMotion    bool   // Reduce animations
-	ScreenReader     bool   // Optimize for screen readers
-	KeyRepeatDelay   int    // Milliseconds before key repeat
-	FocusIndicator   string // Character(s) to indicate focus
-	AnnounceChanges  bool   // Announce view changes
+	HighContrast    bool   // Use high contrast colors
+	LargeText       bool   // Use larger text where possible
+	ReducedMotion   bool   // Reduce animations
+	ScreenReader    bool   // Optimize for screen readers
+	KeyRepeatDelay  int    // Milliseconds before key repeat
+	FocusIndicator  string // Character(s) to indicate focus
+	AnnounceChanges bool   // Announce view changes
 }
 
 // DefaultAccessibilityConfig returns sensible defaults
@@ -126,18 +126,18 @@ func GetBindingsByCategory(context string) map[string][]KeyBinding {
 // FormatKeyBindingHelp creates a formatted help string for key bindings
 func FormatKeyBindingHelp(context string, width int) string {
 	categories := GetBindingsByCategory(context)
-	
+
 	var sections []string
-	
+
 	// Define category order
 	categoryOrder := []string{"Navigation", "Quick Jump", "Actions", "Editing", "Help", "System"}
-	
+
 	for _, cat := range categoryOrder {
 		bindings, exists := categories[cat]
 		if !exists || len(bindings) == 0 {
 			continue
 		}
-		
+
 		section := fmt.Sprintf("━━ %s ━━\n", cat)
 		for _, b := range bindings {
 			keys := b.Key
@@ -148,7 +148,7 @@ func FormatKeyBindingHelp(context string, width int) string {
 		}
 		sections = append(sections, section)
 	}
-	
+
 	return strings.Join(sections, "\n")
 }
 
@@ -274,7 +274,7 @@ func RenderAccessibleLabel(label string, shortcut string, focused bool) string {
 	if focused {
 		style = SelectedStyle
 	}
-	
+
 	if shortcut != "" {
 		return style.Render(fmt.Sprintf("%s [%s]", label, shortcut))
 	}
@@ -308,11 +308,11 @@ func GetContrastColors(config AccessibilityConfig) (fg, bg lipgloss.Color) {
 // KeyboardHelpOverlay renders a keyboard shortcuts overlay
 func KeyboardHelpOverlay(context string, width, height int) string {
 	title := TitleStyle.Render("⌨️ Keyboard Shortcuts")
-	
+
 	help := FormatKeyBindingHelp(context, width)
-	
+
 	footer := SubtleStyle.Render("\nPress ? or ESC to close")
-	
+
 	content := lipgloss.JoinVertical(
 		lipgloss.Left,
 		title,
@@ -320,11 +320,11 @@ func KeyboardHelpOverlay(context string, width, height int) string {
 		help,
 		footer,
 	)
-	
+
 	box := BoxStyle.
 		Width(min(width-4, 60)).
 		Render(content)
-	
+
 	return lipgloss.Place(
 		width,
 		height,
@@ -345,14 +345,14 @@ func min(a, b int) int {
 // QuickNavHint returns a hint string for quick navigation
 func QuickNavHint(currentTab int, totalTabs int) string {
 	hints := []string{}
-	
+
 	if currentTab > 1 {
 		hints = append(hints, fmt.Sprintf("← %d", currentTab-1))
 	}
 	if currentTab < totalTabs {
 		hints = append(hints, fmt.Sprintf("%d →", currentTab+1))
 	}
-	
+
 	return strings.Join(hints, " • ")
 }
 

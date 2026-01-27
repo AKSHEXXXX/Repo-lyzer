@@ -50,7 +50,11 @@ var compareCmd = &cobra.Command{
 
 		_, _ = client.GetLanguages(r1[0], r1[1])
 		commits1, _ := client.GetCommits(r1[0], r1[1], 14)
-		contributors1, _ := client.GetContributorsWithAvatars(r1[0], r1[1], 15)
+		contributors1, err := client.GetContributorsWithAvatars(r1[0], r1[1], 15)
+		if err != nil {
+			fmt.Printf("Error fetching contributors for %s/%s: %v\n", r1[0], r1[1], err)
+			return err
+		}
 		_, _ = client.GetFileTree(r1[0], r1[1], repo1.DefaultBranch)
 		bus1, risk1 := analyzer.BusFactor(contributors1)
 
@@ -65,7 +69,11 @@ var compareCmd = &cobra.Command{
 
 		_, _ = client.GetLanguages(r2[0], r2[1])
 		commits2, _ := client.GetCommits(r2[0], r2[1], 14)
-		contributors2, _ := client.GetContributorsWithAvatars(r2[0], r2[1], 15)
+		contributors2, err := client.GetContributorsWithAvatars(r2[0], r2[1], 15)
+		if err != nil {
+			fmt.Printf("Error fetching contributors for %s/%s: %v\n", r2[0], r2[1], err)
+			return err
+		}
 		_, _ = client.GetFileTree(r2[0], r2[1], repo2.DefaultBranch)
 		bus2, risk2 := analyzer.BusFactor(contributors2)
 

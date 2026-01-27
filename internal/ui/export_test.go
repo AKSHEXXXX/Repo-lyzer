@@ -52,7 +52,7 @@ func TestValidateExportFormat(t *testing.T) {
 func TestExportAnalysis(t *testing.T) {
 	// Test that validation works for the ExportAnalysis function
 	validFormats := []string{"json", "markdown", "csv", "html", "pdf"}
-	
+
 	for _, format := range validFormats {
 		t.Run("valid_"+format, func(t *testing.T) {
 			err := ValidateExportFormat(format)

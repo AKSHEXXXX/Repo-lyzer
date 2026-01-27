@@ -62,7 +62,7 @@ func TestBusFactor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factor, risk := BusFactor(tt.contributors)
-			
+
 			if factor != tt.wantFactor {
 				t.Errorf("BusFactor() factor = %d, want %d", factor, tt.wantFactor)
 			}

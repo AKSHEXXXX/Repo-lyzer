@@ -17,11 +17,11 @@ func TestLoadFavorites_Empty(t *testing.T) {
 }
 
 func TestFavorites_Add(t *testing.T) {
-	favs := &Favorites{Items: []Favorite{}}
+	favs := &FavoritesModel{Items: []FavoriteItem{}}
 
 	// Add first favorite
 	favs.Add("owner/repo1")
-	
+
 	if len(favs.Items) != 1 {
 		t.Errorf("After Add(), len = %d, want 1", len(favs.Items))
 	}
@@ -34,7 +34,7 @@ func TestFavorites_Add(t *testing.T) {
 
 	// Add same favorite again (should update, not duplicate)
 	favs.Add("owner/repo1")
-	
+
 	if len(favs.Items) != 1 {
 		t.Errorf("After duplicate Add(), len = %d, want 1", len(favs.Items))
 	}
@@ -44,14 +44,14 @@ func TestFavorites_Add(t *testing.T) {
 
 	// Add different favorite
 	favs.Add("owner/repo2")
-	
+
 	if len(favs.Items) != 2 {
 		t.Errorf("After second Add(), len = %d, want 2", len(favs.Items))
 	}
 }
 
 func TestFavorites_Remove(t *testing.T) {
-	favs := &Favorites{Items: []Favorite{
+	favs := &FavoritesModel{Items: []FavoriteItem{
 		{RepoName: "owner/repo1", UseCount: 1},
 		{RepoName: "owner/repo2", UseCount: 2},
 		{RepoName: "owner/repo3", UseCount: 3},
@@ -59,11 +59,11 @@ func TestFavorites_Remove(t *testing.T) {
 
 	// Remove middle item
 	favs.Remove("owner/repo2")
-	
+
 	if len(favs.Items) != 2 {
 		t.Errorf("After Remove(), len = %d, want 2", len(favs.Items))
 	}
-	
+
 	// Verify correct items remain
 	for _, fav := range favs.Items {
 		if fav.RepoName == "owner/repo2" {
@@ -79,7 +79,7 @@ func TestFavorites_Remove(t *testing.T) {
 }
 
 func TestFavorites_IsFavorite(t *testing.T) {
-	favs := &Favorites{Items: []Favorite{
+	favs := &FavoritesModel{Items: []FavoriteItem{
 		{RepoName: "owner/repo1"},
 		{RepoName: "owner/repo2"},
 	}}
@@ -97,7 +97,7 @@ func TestFavorites_IsFavorite(t *testing.T) {
 
 func TestFavorites_UpdateUsage(t *testing.T) {
 	now := time.Now()
-	favs := &Favorites{Items: []Favorite{
+	favs := &FavoritesModel{Items: []FavoriteItem{
 		{RepoName: "owner/repo1", UseCount: 5, LastUsed: now.Add(-24 * time.Hour)},
 	}}
 
@@ -115,7 +115,7 @@ func TestFavorites_UpdateUsage(t *testing.T) {
 }
 
 func TestFavorites_GetTopFavorites(t *testing.T) {
-	favs := &Favorites{Items: []Favorite{
+	favs := &FavoritesModel{Items: []FavoriteItem{
 		{RepoName: "repo1"},
 		{RepoName: "repo2"},
 		{RepoName: "repo3"},
@@ -143,7 +143,7 @@ func TestFavorites_GetTopFavorites(t *testing.T) {
 }
 
 func TestFavorites_Clear(t *testing.T) {
-	favs := &Favorites{Items: []Favorite{
+	favs := &FavoritesModel{Items: []FavoriteItem{
 		{RepoName: "repo1"},
 		{RepoName: "repo2"},
 	}}
@@ -157,7 +157,7 @@ func TestFavorites_Clear(t *testing.T) {
 
 func TestFavorite_Fields(t *testing.T) {
 	now := time.Now()
-	fav := Favorite{
+	fav := FavoriteItem{
 		RepoName: "owner/repo",
 		AddedAt:  now,
 		LastUsed: now,
