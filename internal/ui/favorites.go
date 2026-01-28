@@ -22,8 +22,24 @@ type Favorite struct {
 	Notes     string    `json:"notes"`
 }
 
+type FavoriteItem = Favorite
+
 type Favorites struct {
 	Items []Favorite `json:"items"`
+}
+
+type FavoritesModel struct {
+	favorites *Favorites
+	cursor    int
+	width     int
+	height    int
+}
+
+func NewFavoritesModel() FavoritesModel {
+	return FavoritesModel{
+		favorites: &Favorites{Items: []Favorite{}},
+		cursor:    0,
+	}
 }
 
 func (f *Favorites) Add(repoName string) {
@@ -63,26 +79,26 @@ func (f *Favorites) UpdateUsage(repoName string) {
 }
 
 func (f *FavoritesModel) Remove(repoName string) {
-	for i, item := range f.Items {
+	for i, item := range f.favorites.Items {
 		if item.RepoName == repoName {
-			f.Items = append(f.Items[:i], f.Items[i+1:]...)
+			f.favorites.Items = append(f.favorites.Items[:i], f.favorites.Items[i+1:]...)
 			return
 		}
 	}
 }
 
 func (f *FavoritesModel) UpdateUsage(repoName string) {
-	for i, item := range f.Items {
+	for i, item := range f.favorites.Items {
 		if item.RepoName == repoName {
-			f.Items[i].UseCount++
-			f.Items[i].LastUsed = time.Now()
+			f.favorites.Items[i].UseCount++
+			f.favorites.Items[i].LastUsed = time.Now()
 			return
 		}
 	}
 }
 
 func (f *FavoritesModel) IsFavorite(repoName string) bool {
-	for _, item := range f.Items {
+	for _, item := range f.favorites.Items {
 		if item.RepoName == repoName {
 			return true
 		}
@@ -94,14 +110,14 @@ func (f *FavoritesModel) GetTopFavorites(limit int) []FavoriteItem {
 	if limit <= 0 {
 		return []FavoriteItem{}
 	}
-	if limit >= len(f.Items) {
-		return f.Items
+	if limit >= len(f.favorites.Items) {
+		return f.favorites.Items
 	}
-	return f.Items[:limit]
+	return f.favorites.Items[:limit]
 }
 
 func (f *FavoritesModel) Clear() {
-	f.Items = []FavoriteItem{}
+	f.favorites.Items = []FavoriteItem{}
 }
 
 func (f *FavoritesModel) Save() error {
@@ -110,13 +126,13 @@ func (f *FavoritesModel) Save() error {
 		return err
 	}
 
-	favoritesPath := filepath.Join(configDir, "favorites.json")
-	data, err := json.MarshalIndent(f, "", "  ")
+	favoritesPath := filepath.Join(home, ".repo-lyzer", "favorites.json")
+	data, err := json.MarshalIndent(f.favorites, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filePath, data, 0644)
+	return os.WriteFile(favoritesPath, data, 0644)
 }
 
 func LoadFavorites() (*FavoritesModel, error) {
@@ -145,32 +161,6 @@ func LoadFavorites() (*FavoritesModel, error) {
 	})
 
 	return &favorites, nil
-}
-
-func (f *FavoritesModel) View() string {
-	header := TitleStyle.Render("⭐ Favorite Repositories")
-
-	if len(f.Items) == 0 {
-		content := lipgloss.JoinVertical(
-			lipgloss.Left,
-			header,
-			BoxStyle.Render("No favorites yet!\n\nAnalyze a repository and press 'b' to bookmark it."),
-			SubtleStyle.Render("a: add new • q/ESC: back to menu"),
-		)
-
-		if f.width == 0 {
-			return content
-		}
-
-		return lipgloss.Place(
-			f.width,
-			f.height,
-			lipgloss.Center,
-			lipgloss.Center,
-			content,
-		)
-	}
-	return m, nil
 }
 
 func (m FavoritesModel) View(width, height int) string {
@@ -224,13 +214,13 @@ func (m FavoritesModel) View(width, height int) string {
 		footer,
 	)
 
-	if f.width == 0 {
+	if m.width == 0 {
 		return content
 	}
 
 	return lipgloss.Place(
-		f.width,
-		f.height,
+		m.width,
+		m.height,
 		lipgloss.Center,
 		lipgloss.Center,
 		content,

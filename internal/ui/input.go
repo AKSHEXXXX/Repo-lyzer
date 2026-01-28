@@ -17,7 +17,11 @@ func NewInputModel() InputModel {
 	return InputModel{}
 }
 
-func (m InputModel) Update(msg tea.Msg) (InputModel, tea.Cmd) {
+func (m InputModel) Init() tea.Cmd {
+	return nil
+}
+
+func (m InputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -64,13 +68,7 @@ func (m InputModel) View() string {
 
 	box := BoxStyle.Render(inputContent)
 
-	return lipgloss.Place(
-		width,
-		height,
-		lipgloss.Center,
-		lipgloss.Center,
-		box,
-	)
+	return box
 }
 
 func (m *InputModel) SetInput(input string) {
