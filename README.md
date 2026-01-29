@@ -220,6 +220,42 @@ Available via interactive menu.
 ### Export Results
 Export to JSON or Markdown from dashboard.
 
+### Interactive CLI Menu
+Repo-lyzer features a hierarchical, keyboard-driven menu system for easy navigation and access to all features.
+
+#### Main Menu Options
+- **📊 Analyze Repository** – Enter analysis submenu to choose analysis type
+- **🔄 Compare Repositories** – Start side-by-side repository comparison
+- **📜 View History** – Browse previously analyzed repositories
+- **⚙️ Settings** – Access settings submenu for configuration
+- **❓ Help** – Open help submenu for guidance
+- **🚪 Exit** – Quit the application
+
+#### Submenus
+
+**Analysis Types** (accessed via 📊 Analyze Repository):
+- **⚡ Quick Analysis** – Fast overview with key metrics
+- **🔍 Detailed Analysis** – Comprehensive analysis with all metrics
+- **⚙️ Custom Analysis** – User-configurable analysis options
+
+**Settings** (accessed via ⚙️ Settings):
+- **Theme Settings** – Customize UI themes and colors
+- **Export Options** – Configure default export formats
+- **GitHub Token** – Set personal access token for higher rate limits
+- **Reset to Defaults** – Restore all settings to default values
+
+**Help** (accessed via ❓ Help):
+- **Keyboard Shortcuts** – View all available shortcuts
+- **Getting Started** – Quick start guide
+- **Features Guide** – Detailed feature explanations
+- **Troubleshooting** – Common issues and solutions
+
+#### Navigation
+- **Arrow Keys** (↑/↓) – Navigate menu options
+- **Enter** – Select option or enter submenu
+- **ESC** – Return to previous menu level
+- **Tab** – Quick navigation between sections
+
 ---
   <img src="https://res.cloudinary.com/dhyii4oiw/image/upload/v1767290545/Screenshot_2026-01-01_224310_c0hhr8.png" width="90%">
   <img src="https://res.cloudinary.com/dhyii4oiw/image/upload/v1767324721/Screenshot_2026-01-02_090050_u6xweq.png" width="90%">
