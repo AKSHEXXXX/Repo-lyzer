@@ -26,7 +26,7 @@ func NewCloningModel() CloningModel {
 func (m CloningModel) Update(msg tea.Msg) (CloningModel, tea.Cmd) {
 	var cmd tea.Cmd
 
-	switch msg := msg.(type) {
+	switch msg.(type) {
 	case cloneResult:
 		return m, nil // Handled by parent
 	}

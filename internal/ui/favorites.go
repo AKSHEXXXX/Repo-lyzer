@@ -3,14 +3,12 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -35,8 +33,8 @@ type FavoritesModel struct {
 	height    int
 }
 
-func NewFavoritesModel() FavoritesModel {
-	return FavoritesModel{
+func NewFavoritesModel() *FavoritesModel {
+	return &FavoritesModel{
 		favorites: &Favorites{Items: []Favorite{}},
 		cursor:    0,
 	}
@@ -79,22 +77,11 @@ func (f *Favorites) UpdateUsage(repoName string) {
 }
 
 func (f *FavoritesModel) Remove(repoName string) {
-	for i, item := range f.favorites.Items {
-		if item.RepoName == repoName {
-			f.favorites.Items = append(f.favorites.Items[:i], f.favorites.Items[i+1:]...)
-			return
-		}
-	}
+	f.favorites.Remove(repoName)
 }
 
 func (f *FavoritesModel) UpdateUsage(repoName string) {
-	for i, item := range f.favorites.Items {
-		if item.RepoName == repoName {
-			f.favorites.Items[i].UseCount++
-			f.favorites.Items[i].LastUsed = time.Now()
-			return
-		}
-	}
+	f.favorites.UpdateUsage(repoName)
 }
 
 func (f *FavoritesModel) IsFavorite(repoName string) bool {
@@ -156,8 +143,8 @@ func LoadFavorites() (*FavoritesModel, error) {
 	}
 
 	// Sort by last used (most recent first)
-	sort.Slice(favorites.Items, func(i, j int) bool {
-		return favorites.Items[i].LastUsed.After(favorites.Items[j].LastUsed)
+	sort.Slice(favorites.favorites.Items, func(i, j int) bool {
+		return favorites.favorites.Items[i].LastUsed.After(favorites.favorites.Items[j].LastUsed)
 	})
 
 	return &favorites, nil
@@ -184,7 +171,7 @@ func (m FavoritesModel) View(width, height int) string {
 	// Build favorites list
 	var lines []string
 	lines = append(lines, fmt.Sprintf("%-35s │ %-10s │ %s", "Repository", "Uses", "Last Used"))
-	lines = append(lines, lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("─").Repeat(65))
+	lines = append(lines, lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render(strings.Repeat("─", 65)))
 
 	for i, fav := range m.favorites.Items {
 		prefix := "  "

@@ -17,7 +17,7 @@ func TestLoadFavorites_Empty(t *testing.T) {
 }
 
 func TestFavorites_Add(t *testing.T) {
-	favs := &FavoritesModel{Items: []FavoriteItem{}}
+	favs := &Favorites{Items: []Favorite{}}
 
 	// Add first favorite
 	favs.Add("owner/repo1")
@@ -51,21 +51,23 @@ func TestFavorites_Add(t *testing.T) {
 }
 
 func TestFavorites_Remove(t *testing.T) {
-	favs := &FavoritesModel{Items: []FavoriteItem{
-		{RepoName: "owner/repo1", UseCount: 1},
-		{RepoName: "owner/repo2", UseCount: 2},
-		{RepoName: "owner/repo3", UseCount: 3},
-	}}
+	favs := &FavoritesModel{
+		favorites: &Favorites{Items: []Favorite{
+			{RepoName: "owner/repo1", UseCount: 1},
+			{RepoName: "owner/repo2", UseCount: 2},
+			{RepoName: "owner/repo3", UseCount: 3},
+		}},
+	}
 
 	// Remove middle item
 	favs.Remove("owner/repo2")
 
-	if len(favs.Items) != 2 {
-		t.Errorf("After Remove(), len = %d, want 2", len(favs.Items))
+	if len(favs.favorites.Items) != 2 {
+		t.Errorf("After Remove(), len = %d, want 2", len(favs.favorites.Items))
 	}
 
 	// Verify correct items remain
-	for _, fav := range favs.Items {
+	for _, fav := range favs.favorites.Items {
 		if fav.RepoName == "owner/repo2" {
 			t.Error("Removed item still exists")
 		}
@@ -73,16 +75,18 @@ func TestFavorites_Remove(t *testing.T) {
 
 	// Remove non-existent (should not panic)
 	favs.Remove("owner/nonexistent")
-	if len(favs.Items) != 2 {
+	if len(favs.favorites.Items) != 2 {
 		t.Error("Remove of non-existent changed length")
 	}
 }
 
 func TestFavorites_IsFavorite(t *testing.T) {
-	favs := &FavoritesModel{Items: []FavoriteItem{
-		{RepoName: "owner/repo1"},
-		{RepoName: "owner/repo2"},
-	}}
+	favs := &FavoritesModel{
+		favorites: &Favorites{Items: []Favorite{
+			{RepoName: "owner/repo1"},
+			{RepoName: "owner/repo2"},
+		}},
+	}
 
 	if !favs.IsFavorite("owner/repo1") {
 		t.Error("IsFavorite() should return true for existing favorite")
@@ -97,16 +101,18 @@ func TestFavorites_IsFavorite(t *testing.T) {
 
 func TestFavorites_UpdateUsage(t *testing.T) {
 	now := time.Now()
-	favs := &FavoritesModel{Items: []FavoriteItem{
-		{RepoName: "owner/repo1", UseCount: 5, LastUsed: now.Add(-24 * time.Hour)},
-	}}
+	favs := &FavoritesModel{
+		favorites: &Favorites{Items: []Favorite{
+			{RepoName: "owner/repo1", UseCount: 5, LastUsed: now.Add(-24 * time.Hour)},
+		}},
+	}
 
 	favs.UpdateUsage("owner/repo1")
 
-	if favs.Items[0].UseCount != 6 {
-		t.Errorf("UseCount = %d, want 6", favs.Items[0].UseCount)
+	if favs.favorites.Items[0].UseCount != 6 {
+		t.Errorf("UseCount = %d, want 6", favs.favorites.Items[0].UseCount)
 	}
-	if favs.Items[0].LastUsed.Before(now) {
+	if favs.favorites.Items[0].LastUsed.Before(now) {
 		t.Error("LastUsed should be updated to recent time")
 	}
 
@@ -143,15 +149,17 @@ func TestFavorites_GetTopFavorites(t *testing.T) {
 }
 
 func TestFavorites_Clear(t *testing.T) {
-	favs := &FavoritesModel{Items: []FavoriteItem{
-		{RepoName: "repo1"},
-		{RepoName: "repo2"},
-	}}
+	favs := &FavoritesModel{
+		favorites: &Favorites{Items: []Favorite{
+			{RepoName: "repo1"},
+			{RepoName: "repo2"},
+		}},
+	}
 
 	favs.Clear()
 
-	if len(favs.Items) != 0 {
-		t.Errorf("After Clear(), len = %d, want 0", len(favs.Items))
+	if len(favs.favorites.Items) != 0 {
+		t.Errorf("After Clear(), len = %d, want 0", len(favs.favorites.Items))
 	}
 }
 

@@ -75,7 +75,7 @@ type MainModel struct {
 	settings         SettingsModel
 	help             HelpModel
 	history          HistoryModel
-	favorites        FavoritesModel
+	favorites        *FavoritesModel
 	cloneInput       CloneInputModel
 	cloning          CloningModel
 
@@ -113,6 +113,9 @@ type MainModel struct {
 
 // NewMainModel creates a new MainModel with initialized sub-models
 func NewMainModel(cache *cache.Cache, config *config.AppSettings) MainModel {
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	return MainModel{
 		state:           stateMenu,
 		menu:            NewMenuModel(),
@@ -131,6 +134,7 @@ func NewMainModel(cache *cache.Cache, config *config.AppSettings) MainModel {
 		tree:            NewTreeModel(nil),
 		cache:           cache,
 		appConfig:       config,
+		spinner:         s,
 	}
 }
 
@@ -230,6 +234,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case stateCompareLoading:
+		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 
@@ -288,6 +293,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case stateLoading:
+		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 
@@ -650,7 +656,7 @@ func (m MainModel) View() string {
 	case stateSettings:
 		return m.settings.View()
 	case stateHelp:
-		return m.help.View()
+		return m.help.View(m.windowWidth, m.windowHeight)
 	case stateHistory:
 		return m.history.View()
 	case stateFavorites:
@@ -922,8 +928,8 @@ func (m MainModel) compareResultView() string {
 		return "No comparison data"
 	}
 
-	r1 := m.compareResult.Repo1
-	r2 := m.compareResult.Repo2
+	r1 := m.compareResult.result.Repo1
+	r2 := m.compareResult.result.Repo2
 
 	header := TitleStyle.Render(fmt.Sprintf("📊 Comparison: %s vs %s", r1.Repo.FullName, r2.Repo.FullName))
 
@@ -976,10 +982,10 @@ func (m MainModel) compareResultView() string {
 
 	// Verdict
 	var verdict string
-	if m.compareResult.result.Repo1.MaturityScore > m.compareResult.result.Repo2.MaturityScore {
-		verdict = fmt.Sprintf("➡️ %s appears more mature and stable.", m.compareResult.result.Repo1.Repo.FullName)
-	} else if m.compareResult.result.Repo2.MaturityScore > m.compareResult.result.Repo1.MaturityScore {
-		verdict = fmt.Sprintf("➡️ %s appears more mature and stable.", m.compareResult.result.Repo2.Repo.FullName)
+	if r1.MaturityScore > r2.MaturityScore {
+		verdict = fmt.Sprintf("➡️ %s appears more mature and stable.", r1.Repo.FullName)
+	} else if r2.MaturityScore > r1.MaturityScore {
+		verdict = fmt.Sprintf("➡️ %s appears more mature and stable.", r2.Repo.FullName)
 	} else {
 		verdict = "➡️ Both repositories are similarly mature."
 	}
