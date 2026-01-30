@@ -3,24 +3,7 @@
 
 ## Contributors
 
-- @Aamod007
-- @Aditya8369
-- @agnivo988
-- @Gupta-02
-- @GauravKarakoti
-- @Sappymukherjee214
-- @ItsMeArm00n
-- @MuktaRedij
-- @Kiran95021
-- @Shriii19
-- @KUMARI-SONALIUPADHYAY
-- @magic-peach
-- @coderabbitai[bot]
-- @sahoo-tech
-- @Abhijeet-980
-- @Diksha78-bot
-- @Shivani-Meena07
-- @ShashankSaga
+<img src="https://github.com/Aamod007.png" width="50" height="50" alt="Aamod007"> <img src="https://github.com/Aditya8369.png" width="50" height="50" alt="Aditya8369"> <img src="https://github.com/agnivo988.png" width="50" height="50" alt="agnivo988"> <img src="https://github.com/Gupta-02.png" width="50" height="50" alt="Gupta-02"> <img src="https://github.com/GauravKarakoti.png" width="50" height="50" alt="GauravKarakoti"> <img src="https://github.com/Sappymukherjee214.png" width="50" height="50" alt="Sappymukherjee214"> <img src="https://github.com/ItsMeArm00n.png" width="50" height="50" alt="ItsMeArm00n"> <img src="https://github.com/MuktaRedij.png" width="50" height="50" alt="MuktaRedij"> <img src="https://github.com/Kiran95021.png" width="50" height="50" alt="Kiran95021"> <img src="https://github.com/Shriii19.png" width="50" height="50" alt="Shriii19"> <img src="https://github.com/KUMARI-SONALIUPADHYAY.png" width="50" height="50" alt="KUMARI-SONALIUPADHYAY"> <img src="https://github.com/magic-peach.png" width="50" height="50" alt="magic-peach"> <img src="https://github.com/coderabbitai.png" width="50" height="50" alt="coderabbitai[bot]"> <img src="https://github.com/sahoo-tech.png" width="50" height="50" alt="sahoo-tech"> <img src="https://github.com/Abhijeet-980.png" width="50" height="50" alt="Abhijeet-980"> <img src="https://github.com/Diksha78-bot.png" width="50" height="50" alt="Diksha78-bot"> <img src="https://github.com/Shivani-Meena07.png" width="50" height="50" alt="Shivani-Meena07"> <img src="https://github.com/ShashankSaga.png" width="50" height="50" alt="ShashankSaga">
 
 
 <h1 align="center">Repo-lyzer</h1>
