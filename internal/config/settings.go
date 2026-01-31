@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // ExportFormat represents available export formats
@@ -42,6 +43,11 @@ type AppSettings struct {
 
 	// Analysis settings
 	DefaultAnalysisType string `json:"default_analysis_type"` // "quick", "detailed", "custom"
+
+	// Monitoring settings
+	MonitoringEnabled      bool          `json:"monitoring_enabled"`
+	DefaultMonitorInterval time.Duration `json:"default_monitor_interval"`
+	NotificationEnabled    bool          `json:"notification_enabled"`
 }
 
 // DefaultSettings returns the default application settings

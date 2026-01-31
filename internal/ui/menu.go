@@ -33,6 +33,7 @@ func NewMenuModel() MenuModel {
 			"🔄 Compare Repositories",
 			"📜 View History",
 			"📥 Clone Repository",
+			"👀 Monitor Repository",
 			"⚙️ Settings",
 			"❓ Help",
 			"🚪 Exit",
@@ -128,7 +129,7 @@ func (m MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "q":
 			if !m.inSubmenu {
-				m.SelectedOption = 6 // Exit
+				m.SelectedOption = 8 // Exit
 				m.Done = true
 			} else {
 				m.inSubmenu = false
@@ -138,7 +139,7 @@ func (m MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "?":
 			if !m.inSubmenu {
-				m.cursor = 5 // Help
+				m.cursor = 7 // Help
 				m.enterSubmenu()
 			}
 		case "a":
@@ -157,9 +158,14 @@ func (m MenuModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor = 3
 				m.enterSubmenu()
 			}
+		case "m":
+			if !m.inSubmenu {
+				m.cursor = 5 // Monitor
+				m.enterSubmenu()
+			}
 		case "s":
 			if !m.inSubmenu {
-				m.cursor = 5
+				m.cursor = 6
 				m.enterSubmenu()
 			}
 		}

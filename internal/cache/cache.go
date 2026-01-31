@@ -46,6 +46,8 @@ type CacheEntry struct {
 	Analysis  json.RawMessage `json:"analysis"`   // Serialized AnalysisResult
 }
 
+
+
 // CacheIndex stores metadata about all cached repositories.
 // This index enables quick lookups without reading individual cache files.
 type CacheIndex struct {
