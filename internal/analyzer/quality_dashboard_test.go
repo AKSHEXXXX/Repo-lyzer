@@ -56,6 +56,7 @@ func TestGenerateQualityDashboard(t *testing.T) {
 		security,
 		nil, // code quality
 		nil, // dependencies
+		nil, // hotspots
 	)
 
 	// Test overall score calculation
