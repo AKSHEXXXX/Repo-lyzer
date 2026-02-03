@@ -13,6 +13,7 @@ type QualityDashboard struct {
 	RiskLevel       string           `json:"risk_level"`
 	QualityGrade    string           `json:"quality_grade"`
 	ProblemHotspots []ProblemHotspot `json:"problem_hotspots"`
+	Hotspots        []Hotspot        `json:"hotspots"`
 	Recommendations []string         `json:"recommendations"`
 	KeyMetrics      DashboardMetrics `json:"key_metrics"`
 }
@@ -47,10 +48,12 @@ func GenerateQualityDashboard(
 	security *SecurityScanResult,
 	codeQuality *CodeQualityMetrics,
 	dependencies *DependencyAnalysis,
+	hotspots []Hotspot,
 ) *QualityDashboard {
 
 	dashboard := &QualityDashboard{
 		ProblemHotspots: []ProblemHotspot{},
+		Hotspots:        hotspots,
 		Recommendations: []string{},
 	}
 
