@@ -6,6 +6,7 @@ package analyzer
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -20,6 +21,13 @@ type Dependency struct {
 	Name    string `json:"name"`    // Package name (e.g., "react", "github.com/gin-gonic/gin")
 	Version string `json:"version"` // Version constraint (e.g., "^1.0.0", "v1.9.1")
 	Type    string `json:"type"`    // Dependency type: "production", "dev", "peer", "indirect"
+}
+
+// FailedFile represents a dependency file that couldn't be analyzed.
+// It provides users with visibility into which files failed and why.
+type FailedFile struct {
+	Path   string `json:"path"`   // Full path to the file that failed
+	Reason string `json:"reason"` // Human-readable error message
 }
 
 // DependencyFile represents all dependencies extracted from a single file.
@@ -39,6 +47,7 @@ type DependencyAnalysis struct {
 	TotalDeps   int              `json:"total_deps"`    // Total dependencies across all files
 	Languages   []string         `json:"languages"`     // Detected package managers/languages
 	HasLockFile bool             `json:"has_lock_file"` // Whether a lock file exists
+	FailedFiles []FailedFile     `json:"failed_files"`  // Files that couldn't be analyzed
 }
 
 // AnalyzeDependencies fetches and parses dependency files from a repository.
@@ -75,12 +84,22 @@ func AnalyzeDependencies(client *github.Client, owner, repo, branch string, file
 		// Fetch file content from GitHub API
 		content, err := client.GetFileContent(owner, repo, df.path)
 		if err != nil {
-			continue // Skip files we can't read (permissions, size limits, etc.)
+			// Collect error information instead of silently ignoring
+			analysis.FailedFiles = append(analysis.FailedFiles, FailedFile{
+				Path:   df.path,
+				Reason: fmt.Sprintf("Failed to fetch: %v", err),
+			})
+			continue
 		}
 
 		// GitHub API returns base64 encoded content
 		decoded, err := base64.StdEncoding.DecodeString(content)
 		if err != nil {
+			// Collect decode error information
+			analysis.FailedFiles = append(analysis.FailedFiles, FailedFile{
+				Path:   df.path,
+				Reason: fmt.Sprintf("Failed to decode base64: %v", err),
+			})
 			continue
 		}
 
