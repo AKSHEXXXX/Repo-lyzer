@@ -273,6 +273,9 @@ func (m MonitorDashboardModel) ViewWithSize(width, height int) string {
 	// Build notification list
 	var items []string
 	visibleLines := height - 12
+	if visibleLines < 1 {
+		visibleLines = 1
+	}
 	start := m.scrollOffset
 	end := minInt(start+visibleLines, len(m.notifications))
 

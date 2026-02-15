@@ -61,6 +61,9 @@ func (m NotificationsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		maxEntries := len(m.notifications.Entries)
 		visibleLines := m.height - 10 // Account for header and footer
+		if visibleLines < 1 {
+			visibleLines = 1
+		}
 
 		switch msg.String() {
 		case "up", "k":
