@@ -252,7 +252,7 @@ Repo-lyzer features a hierarchical, keyboard-driven menu system for easy navigat
 ## Installation (For Users)
 
 ```bash
-go install github.com/agnivo988/Repo-lyzer@v1.0.5
+go install github.com/agnivo988/Repo-lyzer@v1.0.6
 repo-lyzer
 ```
 
