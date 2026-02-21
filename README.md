@@ -256,6 +256,7 @@ go install github.com/agnivo988/Repo-lyzer@v1.0.6
 ```
 ```bash
 repo-lyzer
+```
 
 ---
 
