@@ -210,13 +210,13 @@ func TestAnalyzePullRequests_FirstTimeContributors(t *testing.T) {
 	closed := now.Add(-68 * time.Hour) // Add closed timestamp
 
 	prs := []github.PullRequest{
-		// user1 has only one PR (first-time, accepted)
-		{Number: 1, State: "closed", CreatedAt: now.Add(-72 * time.Hour), MergedAt: &merged, User: github.User{Login: "user1"}},
-		// user2 has two PRs (not first-time)
-		{Number: 2, State: "closed", CreatedAt: now.Add(-90 * time.Hour), MergedAt: &merged, User: github.User{Login: "user2"}},
-		{Number: 3, State: "closed", CreatedAt: now.Add(-85 * time.Hour), MergedAt: &merged, User: github.User{Login: "user2"}},
-		// user3 has only one PR (first-time, not accepted) - FIX: Add ClosedAt
-		{Number: 4, State: "closed", CreatedAt: now.Add(-70 * time.Hour), ClosedAt: &closed, User: github.User{Login: "user3"}},
+		// first-time, accepted
+		{Number: 1, State: "closed", CreatedAt: now.Add(-72 * time.Hour), MergedAt: &merged, User: github.User{Login: "user1"}, AuthorAssociation: "FIRST_TIME_CONTRIBUTOR"},
+		// not first-time (member)
+		{Number: 2, State: "closed", CreatedAt: now.Add(-90 * time.Hour), MergedAt: &merged, User: github.User{Login: "user2"}, AuthorAssociation: "MEMBER"},
+		{Number: 3, State: "closed", CreatedAt: now.Add(-85 * time.Hour), MergedAt: &merged, User: github.User{Login: "user2"}, AuthorAssociation: "MEMBER"},
+		// first-time, not accepted
+		{Number: 4, State: "closed", CreatedAt: now.Add(-70 * time.Hour), ClosedAt: &closed, User: github.User{Login: "user3"}, AuthorAssociation: "FIRST_TIME_CONTRIBUTOR"},
 	}
 
 	firstReview := now.Add(-70 * time.Hour)

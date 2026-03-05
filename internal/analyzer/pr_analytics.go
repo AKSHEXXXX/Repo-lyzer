@@ -53,16 +53,9 @@ func AnalyzePullRequests(prs []github.PullRequest, reviews map[int][]github.Revi
 
 	var mergeTimes []time.Duration
 	var reviewCounts []int
-	contributorPRs := make(map[string]int)
-	firstTimePRs := make(map[string]bool)
 	var reviewTimesForFirstTime []time.Duration
 
-	// First pass: identify contributors and their PR counts
-	for _, pr := range prs {
-		contributorPRs[pr.User.Login]++
-	}
-
-	// Second pass: analyze each PR
+	// Analyze each PR
 	for _, pr := range prs {
 		// Count states
 		if pr.State == "open" {
@@ -81,10 +74,8 @@ func AnalyzePullRequests(prs []github.PullRequest, reviews map[int][]github.Revi
 		size := classifyPRSize(pr.Additions, pr.Deletions)
 		analytics.PRSizeDistribution[size]++
 
-		// Check if first-time contributor
-		isFirstTime := contributorPRs[pr.User.Login] == 1
-		if isFirstTime {
-			firstTimePRs[pr.User.Login] = true
+		// Check if first-time contributor using GitHub's author association
+		if pr.AuthorAssociation == "FIRST_TIME_CONTRIBUTOR" {
 			analytics.FirstTimeContributorMetrics.TotalFirstTimePRs++
 
 			if pr.MergedAt != nil {
