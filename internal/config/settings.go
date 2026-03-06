@@ -48,6 +48,9 @@ type AppSettings struct {
 	MonitoringEnabled      bool          `json:"monitoring_enabled"`
 	DefaultMonitorInterval time.Duration `json:"default_monitor_interval"`
 	NotificationEnabled    bool          `json:"notification_enabled"`
+
+	// Scheduled jobs for automated report scheduling
+	ScheduledJobs []ScheduledJob `json:"scheduled_jobs"`
 }
 
 // DefaultSettings returns the default application settings
@@ -212,4 +215,154 @@ func (f ExportFormat) DisplayName() string {
 	default:
 		return string(f)
 	}
+}
+
+// ScheduleInterval represents the interval for scheduled reports
+type ScheduleInterval string
+
+const (
+	ScheduleDaily   ScheduleInterval = "daily"
+	ScheduleWeekly  ScheduleInterval = "weekly"
+	ScheduleMonthly ScheduleInterval = "monthly"
+	ScheduleCustom  ScheduleInterval = "custom"
+)
+
+// CronExpression returns the cron expression for the given interval
+func (si ScheduleInterval) CronExpression() string {
+	switch si {
+	case ScheduleDaily:
+		return "0 9 * * *" // Daily at 9 AM
+	case ScheduleWeekly:
+		return "0 9 * * 1" // Weekly on Monday at 9 AM
+	case ScheduleMonthly:
+		return "0 9 1 * *" // Monthly on 1st at 9 AM
+	default:
+		return "0 9 * * *" // Default to daily
+	}
+}
+
+// DisplayName returns a user-friendly name for the schedule interval
+func (si ScheduleInterval) DisplayName() string {
+	switch si {
+	case ScheduleDaily:
+		return "Daily"
+	case ScheduleWeekly:
+		return "Weekly"
+	case ScheduleMonthly:
+		return "Monthly"
+	case ScheduleCustom:
+		return "Custom"
+	default:
+		return string(si)
+	}
+}
+
+// OutputDestination represents where scheduled reports are sent
+type OutputDestination struct {
+	Type       string `json:"type"`        // "local" or "webhook"
+	LocalPath  string `json:"local_path"`  // Local directory path
+	WebhookURL string `json:"webhook_url"` // Webhook URL for notifications
+	Enabled    bool   `json:"enabled"`     // Whether this destination is enabled
+}
+
+// ScheduledJob represents a scheduled analysis report job
+type ScheduledJob struct {
+	ID             string            `json:"id"`              // Unique job identifier
+	Owner          string            `json:"owner"`           // Repository owner
+	Repo           string            `json:"repo"`            // Repository name
+	Interval       ScheduleInterval  `json:"interval"`        // Schedule interval
+	CronExpression string            `json:"cron_expression"` // Custom cron expression (if interval is custom)
+	Format         ExportFormat      `json:"format"`          // Export format
+	Destination    OutputDestination `json:"destination"`     // Output destination
+	Enabled        bool              `json:"enabled"`         // Whether the job is enabled
+	LastRun        time.Time         `json:"last_run"`        // Last execution time
+	NextRun        time.Time         `json:"next_run"`        // Next scheduled execution
+	CreatedAt      time.Time         `json:"created_at"`      // Job creation time
+	AnalysisType   string            `json:"analysis_type"`   // Type of analysis to run
+}
+
+// GetRepoFullName returns the full repository name (owner/repo)
+func (sj *ScheduledJob) GetRepoFullName() string {
+	return sj.Owner + "/" + sj.Repo
+}
+
+// GetNextCronExpression returns the cron expression for the job
+func (sj *ScheduledJob) GetCronExpression() string {
+	if sj.Interval == ScheduleCustom && sj.CronExpression != "" {
+		return sj.CronExpression
+	}
+	return sj.Interval.CronExpression()
+}
+
+// AddScheduledJob adds a new scheduled job and saves settings
+func (s *AppSettings) AddScheduledJob(job ScheduledJob) error {
+	// Generate ID if not provided
+	if job.ID == "" {
+		job.ID = generateJobID(job.Owner, job.Repo)
+	}
+	job.CreatedAt = time.Now()
+	job.NextRun = calculateNextRun(job.GetCronExpression())
+
+	s.ScheduledJobs = append(s.ScheduledJobs, job)
+	return s.SaveSettings()
+}
+
+// RemoveScheduledJob removes a scheduled job by ID and saves settings
+func (s *AppSettings) RemoveScheduledJob(jobID string) error {
+	for i, job := range s.ScheduledJobs {
+		if job.ID == jobID {
+			s.ScheduledJobs = append(s.ScheduledJobs[:i], s.ScheduledJobs[i+1:]...)
+			return s.SaveSettings()
+		}
+	}
+	return nil
+}
+
+// GetScheduledJobs returns all scheduled jobs
+func (s *AppSettings) GetScheduledJobs() []ScheduledJob {
+	return s.ScheduledJobs
+}
+
+// GetScheduledJobByID returns a scheduled job by ID
+func (s *AppSettings) GetScheduledJobByID(jobID string) *ScheduledJob {
+	for _, job := range s.ScheduledJobs {
+		if job.ID == jobID {
+			return &job
+		}
+	}
+	return nil
+}
+
+// UpdateScheduledJob updates an existing scheduled job and saves settings
+func (s *AppSettings) UpdateScheduledJob(job ScheduledJob) error {
+	for i, existingJob := range s.ScheduledJobs {
+		if existingJob.ID == job.ID {
+			s.ScheduledJobs[i] = job
+			return s.SaveSettings()
+		}
+	}
+	return nil
+}
+
+// EnableScheduledJob enables or disables a scheduled job
+func (s *AppSettings) EnableScheduledJob(jobID string, enabled bool) error {
+	for i, job := range s.ScheduledJobs {
+		if job.ID == jobID {
+			s.ScheduledJobs[i].Enabled = enabled
+			return s.SaveSettings()
+		}
+	}
+	return nil
+}
+
+// generateJobID generates a unique job ID
+func generateJobID(owner, repo string) string {
+	return owner + "-" + repo + "-" + time.Now().Format("20060102150405")
+}
+
+// calculateNextRun calculates the next run time based on cron expression
+func calculateNextRun(cronExpr string) time.Time {
+	// Simple implementation - in production, use the cron library to parse
+	// For now, return a time 24 hours from now as a placeholder
+	return time.Now().Add(24 * time.Hour)
 }
