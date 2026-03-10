@@ -345,10 +345,11 @@ func parseRequirementsTxt(content []byte) ([]Dependency, string) {
 	var deps []Dependency
 	lines := strings.Split(string(content), "\n")
 
-	// Pattern for package with version specifier (e.g., "flask>=2.0.0")
-	versionPattern := regexp.MustCompile(`^([a-zA-Z0-9_-]+)\s*([=<>!~]+.*)$`)
-	// Pattern for package name only (e.g., "flask")
-	simplePattern := regexp.MustCompile(`^([a-zA-Z0-9_-]+)\s*$`)
+	// Pattern for package with version specifier and optional markers
+	// Group 1: Name (including dots and dashes, but excluding extras)
+	// Group 2: Version specifier
+	// Group 3: Optional markers (after ;)
+	versionPattern := regexp.MustCompile(`^([a-zA-Z0-9._\-]+)(?:\[[^\]]+\])?\s*([=<>!~]+[^;#\s]+)?(?:\s*;\s*([^#]+))?`)
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -358,21 +359,21 @@ func parseRequirementsTxt(content []byte) ([]Dependency, string) {
 			continue
 		}
 
-		// Try versioned pattern first
-		if matches := versionPattern.FindStringSubmatch(line); len(matches) >= 3 {
-			deps = append(deps, Dependency{
-				Name:    matches[1],
-				Version: strings.TrimSpace(matches[2]),
-				Type:    "production",
-			})
-			continue
+		// Strip inline comments if any
+		if idx := strings.Index(line, "#"); idx != -1 {
+			line = strings.TrimSpace(line[:idx])
 		}
 
-		// Try simple pattern (just package name)
-		if matches := simplePattern.FindStringSubmatch(line); len(matches) >= 2 {
+		if matches := versionPattern.FindStringSubmatch(line); len(matches) >= 2 {
+			name := matches[1]
+			version := "*"
+			if matches[2] != "" {
+				version = strings.TrimSpace(matches[2])
+			}
+
 			deps = append(deps, Dependency{
-				Name:    matches[1],
-				Version: "*",
+				Name:    name,
+				Version: version,
 				Type:    "production",
 			})
 		}
