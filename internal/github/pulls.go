@@ -7,17 +7,18 @@ import (
 
 // PullRequest represents a GitHub pull request
 type PullRequest struct {
-	Number       int        `json:"number"`
-	Title        string     `json:"title"`
-	State        string     `json:"state"`
-	CreatedAt    time.Time  `json:"created_at"`
-	MergedAt     *time.Time `json:"merged_at"`
-	ClosedAt     *time.Time `json:"closed_at"`
-	User         User       `json:"user"`
-	Draft        bool       `json:"draft"`
-	Additions    int        `json:"additions"`
-	Deletions    int        `json:"deletions"`
-	ChangedFiles int        `json:"changed_files"`
+	Number            int        `json:"number"`
+	Title             string     `json:"title"`
+	State             string     `json:"state"`
+	CreatedAt         time.Time  `json:"created_at"`
+	MergedAt          *time.Time `json:"merged_at"`
+	ClosedAt          *time.Time `json:"closed_at"`
+	User              User       `json:"user"`
+	Draft             bool       `json:"draft"`
+	Additions         int        `json:"additions"`
+	Deletions         int        `json:"deletions"`
+	ChangedFiles      int        `json:"changed_files"`
+	AuthorAssociation string     `json:"author_association"`
 }
 
 // Review represents a pull request review
