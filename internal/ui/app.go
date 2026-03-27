@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -98,6 +100,7 @@ type MainModel struct {
 	favoritesCursor int
 	animTick        int
 	err             interface{}
+	analysisCancel  context.CancelFunc
 	analysisType    string
 	compareStep     int
 	compareInput1   string
@@ -157,6 +160,10 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.menu.height = msg.Height
 
 	case BackToMenuMsg:
+		if m.analysisCancel != nil {
+			m.analysisCancel()
+			m.analysisCancel = nil
+		}
 		m.state = stateMenu
 		return m, nil
 
@@ -165,9 +172,10 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case AnalyzeRepoMsg:
-		m.state = stateLoading
-		// TODO: Start analysis command
-		return m, nil
+		// Handled by the state-specific switch below.
+		// (If we handle it here we risk short-circuiting `stateInput`'s logic.)
+		// no-op
+		break
 
 	case ErrorMsg:
 		m.err = error(msg)
@@ -218,7 +226,9 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case AnalyzeRepoMsg:
 			m.state = stateLoading
 			m.loading.SetRepoName(msg.repoName)
-			cmds = append(cmds, m.analyzeRepo(msg.repoName), TickProgressCmd())
+			ctx, cancel := context.WithCancel(context.Background())
+			m.analysisCancel = cancel
+			cmds = append(cmds, m.analyzeRepo(ctx, msg.repoName), TickProgressCmd())
 		case BackToMenuMsg:
 			m.state = stateMenu
 		}
@@ -303,12 +313,20 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
 
+		// Delegate to the loading model so it can handle cancel keys (ESC/q)
+		newLoading, loadingCmd := m.loading.Update(msg)
+		m.loading = newLoading
+		if loadingCmd != nil {
+			cmds = append(cmds, loadingCmd)
+		}
+
 		if result, ok := msg.(AnalysisResult); ok {
 			m.dashboard.SetData(result)
 			m.dashboard.SetCacheStatus("fresh")
 			m.state = stateDashboard
 			m.progress = nil
 			m.cacheStatus = "fresh"
+			m.analysisCancel = nil
 			// Save to history
 			history, _ := LoadHistory()
 			m.history.Entries = history.Entries
@@ -321,6 +339,7 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = stateDashboard
 			m.progress = nil
 			m.cacheStatus = "cached"
+			m.analysisCancel = nil
 			// Save to history
 			history, _ := LoadHistory()
 			m.history.Entries = history.Entries
@@ -328,9 +347,16 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.history.Save()
 		}
 		if err, ok := msg.(error); ok {
+			m.progress = nil
+			if errors.Is(err, context.Canceled) {
+				m.err = nil
+				m.state = stateMenu
+				m.analysisCancel = nil
+				return m, nil
+			}
 			m.err = err
 			m.state = stateInput // Go back to input on error
-			m.progress = nil
+			m.analysisCancel = nil
 		}
 
 	case stateFavorites:
@@ -358,7 +384,10 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					} else {
 						m.input.input = repoName
 						m.state = stateLoading
-						cmds = append(cmds, m.analyzeRepo(repoName), TickProgressCmd())
+						m.loading.SetRepoName(repoName)
+						ctx, cancel := context.WithCancel(context.Background())
+						m.analysisCancel = cancel
+						cmds = append(cmds, m.analyzeRepo(ctx, repoName), TickProgressCmd())
 					}
 				}
 			case "d":
@@ -400,7 +429,10 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					repoName := m.history.Entries[m.historyCursor].RepoName
 					m.input.input = repoName
 					m.state = stateLoading
-					cmds = append(cmds, m.analyzeRepo(repoName), TickProgressCmd())
+					m.loading.SetRepoName(repoName)
+					ctx, cancel := context.WithCancel(context.Background())
+					m.analysisCancel = cancel
+					cmds = append(cmds, m.analyzeRepo(ctx, repoName), TickProgressCmd())
 				}
 			case "d":
 				// Delete selected entry
@@ -624,7 +656,10 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.dashboard.data.Repo != nil {
 					m.input.input = m.dashboard.data.Repo.FullName
 					m.state = stateLoading
-					cmds = append(cmds, m.analyzeRepo(m.input.input), TickProgressCmd())
+					m.loading.SetRepoName(m.input.input)
+					ctx, cancel := context.WithCancel(context.Background())
+					m.analysisCancel = cancel
+					cmds = append(cmds, m.analyzeRepo(ctx, m.input.input), TickProgressCmd())
 					return m, tea.Batch(cmds...)
 				}
 			}
@@ -787,8 +822,12 @@ func (m MainModel) cloneRepo(repoName string) tea.Cmd {
 	}
 }
 
-func (m MainModel) analyzeRepo(repoName string) tea.Cmd {
+func (m MainModel) analyzeRepo(ctx context.Context, repoName string) tea.Cmd {
 	return func() tea.Msg {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		parts := strings.Split(repoName, "/")
 		if len(parts) != 2 {
 			return fmt.Errorf("invalid repository URL: must be in owner/repo format or a valid GitHub URL")
@@ -814,6 +853,7 @@ func (m MainModel) analyzeRepo(repoName string) tea.Cmd {
 
 		// Stage 1: Fetch repository
 		client := github.NewClient()
+		client.SetContext(ctx)
 		repo, err := client.GetRepo(parts[0], parts[1])
 		if err != nil {
 			return err
@@ -851,11 +891,23 @@ func (m MainModel) analyzeRepo(repoName string) tea.Cmd {
 		maturityScore, maturityLevel := analyzer.RepoMaturityScore(repo, len(commits), len(contributors), false)
 
 		// Stage 6: Analyze dependencies and contributor insights
-		deps, _ := analyzer.AnalyzeDependencies(client, parts[0], parts[1], repo.DefaultBranch, fileTree)
+		deps, depsErr := analyzer.AnalyzeDependencies(client, parts[0], parts[1], repo.DefaultBranch, fileTree)
+		if depsErr != nil && errors.Is(depsErr, context.Canceled) {
+			return depsErr
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		contributorInsights := analyzer.AnalyzeContributors(contributors)
 
 		// Stage 7: Security vulnerability scan
-		security, _ := analyzer.ScanDependencies(deps)
+		security, securityErr := analyzer.ScanDependencies(deps)
+		if securityErr != nil && errors.Is(securityErr, context.Canceled) {
+			return securityErr
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		tracker.NextStage()
 
 		// Mark complete
@@ -876,7 +928,13 @@ func (m MainModel) analyzeRepo(repoName string) tea.Cmd {
 		)
 
 		// Analyze Hotspots
-		hotspots, _ := analyzer.AnalyzeHotspots(repo, commits, fileTree, client)
+		hotspots, hotspotsErr := analyzer.AnalyzeHotspots(repo, commits, fileTree, client)
+		if hotspotsErr != nil && errors.Is(hotspotsErr, context.Canceled) {
+			return hotspotsErr
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 
 		// Generate quality dashboard
 		qualityDashboard := analyzer.GenerateQualityDashboard(

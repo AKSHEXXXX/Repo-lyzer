@@ -40,7 +40,7 @@ func (m LoadingModel) Update(msg tea.Msg) (LoadingModel, tea.Cmd) {
 	case error:
 		return m, nil // Handled by parent
 	case tea.KeyMsg:
-		if msg.String() == "esc" {
+		if msg.String() == "esc" || msg.String() == "q" {
 			return m, func() tea.Msg { return BackToMenuMsg{} }
 		}
 	}
