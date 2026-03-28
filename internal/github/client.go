@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 type Client struct {
 	http  *http.Client
 	token string
+	ctx   context.Context
 }
 
 // User represents a GitHub user
@@ -28,7 +30,17 @@ func NewClient() *Client {
 	return &Client{
 		http:  &http.Client{Timeout: 30 * time.Second},
 		token: os.Getenv("GITHUB_TOKEN"),
+		ctx:   context.Background(),
 	}
+}
+
+// SetContext sets the context used to cancel in-flight HTTP requests.
+func (c *Client) SetContext(ctx context.Context) {
+	if ctx == nil {
+		c.ctx = context.Background()
+		return
+	}
+	c.ctx = ctx
 }
 
 // HasToken returns true if a GitHub token is configured
@@ -44,7 +56,7 @@ func (c *Client) SetToken(token string) {
 // get performs a GET request to the GitHub API and decodes the JSON response.
 // It handles authentication and provides detailed error messages for rate limiting.
 func (c *Client) get(url string, target interface{}) error {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(c.ctx, "GET", url, nil)
 	if err != nil {
 		return err
 	}
