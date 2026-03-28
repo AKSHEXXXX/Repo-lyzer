@@ -595,12 +595,31 @@ func isSourceFile(path string) bool {
 
 func isTestFile(path string) bool {
 	lowerPath := strings.ToLower(path)
-	testPatterns := []string{"_test.", ".test.", ".spec.", "_spec.", "/test/", "/tests/", "/__tests__/", "/spec/", "test/", "tests/", "__tests__/"}
-	for _, pattern := range testPatterns {
-		if strings.Contains(lowerPath, pattern) {
+
+	// Check file suffixes for common test patterns
+	testSuffixes := []string{"_test.go", ".test.js", ".test.ts", ".spec.js", ".spec.ts", "_spec.rb"}
+	for _, suffix := range testSuffixes {
+		if strings.HasSuffix(lowerPath, suffix) {
 			return true
 		}
 	}
+
+	// Check directory components for exact test folder names
+	pathParts := strings.Split(filepath.ToSlash(lowerPath), "/")
+	testDirNames := map[string]bool{
+		"test":      true,
+		"tests":     true,
+		"spec":      true,
+		"specs":     true,
+		"__tests__": true,
+	}
+
+	for _, part := range pathParts {
+		if testDirNames[part] {
+			return true
+		}
+	}
+
 	return false
 }
 

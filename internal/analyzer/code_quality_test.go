@@ -317,8 +317,13 @@ func TestIsTestFile(t *testing.T) {
 		{"component.spec.ts", true},
 		{"test/test_app.py", true},
 		{"__tests__/app.js", true},
+		{"test/app.go", true},
+		{"src/tests/helper.js", true},
 		{"main.go", false},
 		{"app.js", false},
+		{"contest.go", false},
+		{"latest.json", false},
+		{"internal/contest/main.go", false},
 	}
 
 	for _, tc := range testCases {
