@@ -3,7 +3,7 @@
 
 ## Contributors
 
-<img src="https://github.com/Aamod007.png" width="50" height="50" alt="Aamod007" title="Contributor"> <img src="https://github.com/Aditya8369.png" width="50" height="50" alt="Aditya8369" title="Contributor"> <img src="https://github.com/agnivo988.png" width="50" height="50" alt="agnivo988" title="Project Maintainer"> <img src="https://github.com/Gupta-02.png" width="50" height="50" alt="Gupta-02" title="Contributor"> <img src="https://github.com/GauravKarakoti.png" width="50" height="50" alt="GauravKarakoti" title="Contributor"> <img src="https://github.com/Sappymukherjee214.png" width="50" height="50" alt="Sappymukherjee214" title="Contributor"> <img src="https://github.com/ItsMeArm00n.png" width="50" height="50" alt="ItsMeArm00n" title="Contributor"> <img src="https://github.com/MuktaRedij.png" width="50" height="50" alt="MuktaRedij" title="Contributor"> <img src="https://github.com/Kiran95021.png" width="50" height="50" alt="Kiran95021" title="Contributor"> <img src="https://github.com/Shriii19.png" width="50" height="50" alt="Shriii19" title="Contributor"> <img src="https://github.com/KUMARI-SONALIUPADHYAY.png" width="50" height="50" alt="KUMARI-SONALIUPADHYAY" title="Contributor"> <img src="https://github.com/magic-peach.png" width="50" height="50" alt="magic-peach" title="Contributor"> <img src="https://github.com/coderabbitai.png" width="50" height="50" alt="coderabbitai[bot]" title="Bot Contributor"> <img src="https://github.com/sahoo-tech.png" width="50" height="50" alt="sahoo-tech" title="Contributor"> <img src="https://github.com/Abhijeet-980.png" width="50" height="50" alt="Abhijeet-980" title="Contributor"> <img src="https://github.com/Diksha78-bot.png" width="50" height="50" alt="Diksha78-bot" title="Bot Contributor"> <img src="https://github.com/Shivani-Meena07.png" width="50" height="50" alt="Shivani-Meena07" title="Contributor"> <img src="https://github.com/ShashankSaga.png" width="50" height="50" alt="ShashankSaga" title="Contributor">
+<a href="https://github.com/Aamod007"><img src="https://github.com/Aamod007.png" width="50" height="50" alt="Aamod007" title="Contributor"></a> <a href="https://github.com/Aditya8369"><img src="https://github.com/Aditya8369.png" width="50" height="50" alt="Aditya8369" title="Contributor"></a> <a href="https://github.com/agnivo988"><img src="https://github.com/agnivo988.png" width="50" height="50" alt="agnivo988" title="Project Maintainer"></a> <a href="https://github.com/Gupta-02"><img src="https://github.com/Gupta-02.png" width="50" height="50" alt="Gupta-02" title="Contributor"></a> <a href="https://github.com/GauravKarakoti"><img src="https://github.com/GauravKarakoti.png" width="50" height="50" alt="GauravKarakoti" title="Contributor"></a> <a href="https://github.com/Sappymukherjee214"><img src="https://github.com/Sappymukherjee214.png" width="50" height="50" alt="Sappymukherjee214" title="Contributor"></a> <a href="https://github.com/ItsMeArm00n"><img src="https://github.com/ItsMeArm00n.png" width="50" height="50" alt="ItsMeArm00n" title="Contributor"></a> <a href="https://github.com/MuktaRedij"><img src="https://github.com/MuktaRedij.png" width="50" height="50" alt="MuktaRedij" title="Contributor"></a> <a href="https://github.com/Kiran95021"><img src="https://github.com/Kiran95021.png" width="50" height="50" alt="Kiran95021" title="Contributor"></a> <a href="https://github.com/Shriii19"><img src="https://github.com/Shriii19.png" width="50" height="50" alt="Shriii19" title="Contributor"></a> <a href="https://github.com/KUMARI-SONALIUPADHYAY"><img src="https://github.com/KUMARI-SONALIUPADHYAY.png" width="50" height="50" alt="KUMARI-SONALIUPADHYAY" title="Contributor"></a> <a href="https://github.com/magic-peach"><img src="https://github.com/magic-peach.png" width="50" height="50" alt="magic-peach" title="Contributor"></a> <a href="https://github.com/coderabbitai"><img src="https://github.com/coderabbitai.png" width="50" height="50" alt="coderabbitai[bot]" title="Bot Contributor"></a> <a href="https://github.com/sahoo-tech"><img src="https://github.com/sahoo-tech.png" width="50" height="50" alt="sahoo-tech" title="Contributor"></a> <a href="https://github.com/Abhijeet-980"><img src="https://github.com/Abhijeet-980.png" width="50" height="50" alt="Abhijeet-980" title="Contributor"></a> <a href="https://github.com/Diksha78-bot"><img src="https://github.com/Diksha78-bot.png" width="50" height="50" alt="Diksha78-bot" title="Bot Contributor"></a> <a href="https://github.com/Shivani-Meena07"><img src="https://github.com/Shivani-Meena07.png" width="50" height="50" alt="Shivani-Meena07" title="Contributor"></a> <a href="https://github.com/ShashankSaga"><img src="https://github.com/ShashankSaga.png" width="50" height="50" alt="ShashankSaga" title="Contributor"></a>
 
 
 <h1 align="center">Repo-lyzer</h1>
@@ -257,6 +257,29 @@ go install github.com/agnivo988/Repo-lyzer@v1.0.6
 ```bash
 repo-lyzer
 ```
+
+---
+
+## Contributor Section
+
+Contributions are welcome. If you want to improve Repo-lyzer, start by reviewing the architecture and analyzer documentation, then make focused changes with clear testable behavior.
+
+### Local Setup for Contributors
+
+```bash
+git clone https://github.com/agnivo988/Repo-lyzer.git
+cd Repo-lyzer
+go mod tidy
+go run main.go
+```
+
+### How to Contribute
+
+- Fork the repository and create a feature branch
+- Keep changes scoped to one feature, fix, or documentation update
+- Update documentation when behavior or commands change
+- Test your changes locally before opening a pull request
+- Open a pull request with a short description of the problem and solution
 
 ---
 
