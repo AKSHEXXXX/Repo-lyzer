@@ -286,5 +286,3 @@ go run main.go
 ## License
 
 MIT License © 2026 Agniva Mukherjee
-yaml
-Copy code
