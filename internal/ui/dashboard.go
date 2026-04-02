@@ -290,8 +290,8 @@ func (m DashboardModel) View() string {
 	return lipgloss.Place(
 		m.width,
 		m.height,
-		lipgloss.Center,
-		lipgloss.Center,
+		lipgloss.Left,
+		lipgloss.Top,
 		fullContent,
 	)
 }
@@ -839,13 +839,22 @@ func (m DashboardModel) qualityDashboardView() string {
 		"\n"+recsContent,
 	))
 
+	bottomPanels := lipgloss.JoinHorizontal(lipgloss.Top, hotspotsBox, " ", recsBox)
+	if m.width > 0 {
+		combinedWidth := lipgloss.Width(hotspotsBox) + 1 + lipgloss.Width(recsBox)
+		// Fall back to vertical stacking on narrower terminals.
+		if combinedWidth > m.width {
+			bottomPanels = lipgloss.JoinVertical(lipgloss.Left, hotspotsBox, "\n", recsBox)
+		}
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		header,
 		"\n",
 		summaryBox,
 		"\n",
-		lipgloss.JoinHorizontal(lipgloss.Top, hotspotsBox, " ", recsBox),
+		bottomPanels,
 	)
 }
 
